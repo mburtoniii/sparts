@@ -10,15 +10,18 @@ Ultimately a Blockchain ledger is used to established trust on who did what, whe
 
 The biggest challenge to obtaining a complete and accurate Open Source Bill of Materials (OSS-BOM) for a product (along with the other compliance artifacts) arises because software parts are provided by multiple different suppliers. Consider the simple example illustrated below  where three different suppliers provide software parts for the manufacturing of a video camera V sold by manufacturer M. Supplier S1 delivers the microprocessor accompanied by the firmware and software drivers. Supplier S2 assembles and delivers the Linux runtime operating system and Supplier S3 delivers the applications that manage the camera display, menu and various functions. Ideally, when camera V ships, it should be accompanied by a single compliance envelope that contains, as a minimum, a list of all the open source parts incorporated by the various suppliers (OSS BOMs) and the mandatory source code and legal notices.
 
-![video-camera-arch](C:\Users\mgisi\Documents\Users\mgisi\gospace\src\sparts\docs\images\video-camera-arch.png)
-
-​	**Figure 2**: Video camera V, suppliers, parts, envelopes and open source artifacts 
+<p align="center"><img src="./docs/images/video-camera-arch.png" width="902" height="603"/>
+<br><br>
+<b>Figure 1</b>: Video camera V, suppliers, parts, envelopes and open source artifacts 
+</p>
 
 Manufacturer M needs a way to trust that 1) each supplier has prepared the required compliance artifacts for their respective contribution; 2) in the event that an artifact was missing or not properly prepared (e.g., source), we can identify who is responsible for remedying the situation; and 3) no one supplier can sabotage (hack) the integrity of the compliance artifacts of another supplier. All in all, tracking the artifacts across the supply chain to establish trust that each supplier did the right thing presents a formidably challenge.
 
 The SParts project developed a Blockchain Ledger to manage this complexity, while simultaneously establishing greater trust around the use of open source software. It serves as a global data store that tracks the state of suppliers, their list of software parts, the corresponding envelopes and envelope content. Typical transactions performed on the ledger include adding a part to a supplier’s parts list, assigning an envelope to a software part, and adding, updating and removing artifacts from an envelope.
 
-<p align="center"><img src="./docs/images/blockchain-illustration.png" width="494" height="341"/></p>
+<p align="center"><img src="./docs/images/blockchain-illustration.png" width="494" height="341"/>
+<br><br>
+<b>Figure 2</b>: Software Ledger </p>
 
 Figure 3 illustrates ledger entries that represent the parts for video camera V presented in Figure 2. Transactions 101 through 104 represent software part 37 and transactions 105 through 110 represent part 101. Transaction 111 illustrates that an additional artifact was later added to the part 37 envelope and transaction 112 illustrates that the source code was updated for part 101’s envelope. In the first instances, Supplier S1 forgot to include a notice artifact but was able to remedy it after the fact. In the second instance, Supplier S2 was able to determine that some of the mandatory/required source code was missing and to efficiently remedy the issue by simply updating the ledger. By recording software part information in the ledger, customers of both suppliers S1 and S2 would automatically receive the updates. When manufacturer M ships the video camera, they could query the ledger to obtain the latest and most comprehensive collect compliance artifacts.
 
