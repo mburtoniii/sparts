@@ -18,7 +18,7 @@ Manufacturer M needs a way to trust that 1) each supplier has prepared the requi
 
 The SParts project developed a Blockchain Ledger to manage this complexity, while simultaneously establishing greater trust around the use of open source software. It serves as a global data store that tracks the state of suppliers, their list of software parts, the corresponding envelopes and envelope content. Typical transactions performed on the ledger include adding a part to a supplier’s parts list, assigning an envelope to a software part, and adding, updating and removing artifacts from an envelope.
 
-<img src="./docs/images/blockchain-illustration.png" width="494" height="341" align="middle">
+<p align="center"><img src="./docs/images/blockchain-illustration.png" width="642" height="443"/></p>
 
 Figure 3 illustrates ledger entries that represent the parts for video camera V presented in Figure 2. Transactions 101 through 104 represent software part 37 and transactions 105 through 110 represent part 101. Transaction 111 illustrates that an additional artifact was later added to the part 37 envelope and transaction 112 illustrates that the source code was updated for part 101’s envelope. In the first instances, Supplier S1 forgot to include a notice artifact but was able to remedy it after the fact. In the second instance, Supplier S2 was able to determine that some of the mandatory/required source code was missing and to efficiently remedy the issue by simply updating the ledger. By recording software part information in the ledger, customers of both suppliers S1 and S2 would automatically receive the updates. When manufacturer M ships the video camera, they could query the ledger to obtain the latest and most comprehensive collect compliance artifacts.
 
