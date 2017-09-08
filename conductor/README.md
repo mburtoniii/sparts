@@ -4,13 +4,18 @@ The conductor is a server side component written in Go that services as a coordi
 
 The conductor provides all services via a RESTful API. You can find the documantation in the /data directory or by making the following  request:
 
-http://<conductor-host-addr>:<port>/api/sparts/help
+http://[conductor-host-address]/api/sparts/help
 
 
 
 ## Build & Run
 
-The conductor is written in Go and therefore you will need to compile it for your platform. You will need to install the following dependencies:
+The conductor is written in Go and therefore you will need to compile it for your platform. If Go is not installed you can find the instructions here:
+```
+https://golang.org/doc/install#install
+```
+
+You may need to install gcc before installing the following dependencies:
 
 ```
 go get github.com/mattn/go-sqlite3
@@ -25,7 +30,7 @@ In the conductor directory execute the following build command
 go build -o conductor
 ```
 
-Copy the conductor and directory /data to a directory where you want to run it and execute the conductor:
+Copy the conductor and directory data/ to a directory where you want to run it and execute the conductor:
 
 ```
 conductor  /data
