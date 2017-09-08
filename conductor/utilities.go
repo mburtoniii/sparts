@@ -91,6 +91,7 @@ func GetHostIPAddress() string {
 	return torn[0]
 }
 
+/***
 // FileExist returns whether the given file or directory exists or not
 func FileExists (path string) (bool, error) {
 	_, err := os.Stat(path)
@@ -102,3 +103,4 @@ func FileExists (path string) (bool, error) {
 	}
 	return true, err
 }
+***/

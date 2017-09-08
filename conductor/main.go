@@ -73,7 +73,6 @@ func GetConfigurationInfo(configuration *Configuration, first_time bool) {
 		// Test if certain files exist
 		//if fileExists ("./data/db") != true {
 
-		}
 	}
 }
 
