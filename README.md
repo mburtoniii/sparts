@@ -1,12 +1,12 @@
 ## Utilizing a Blockchain to Establish Trust with Open Source Used Across the SupplyChain
 
-### Introduction
+## Introduction
 
 We developed a Blockchain Ledger to track the open source components used across a supply chain. Tracking the open source used is necessary to understand which components are used in any manufactured product. It is important that software suppliers maintain an accurate and complete list of the open source parts in their offerings in order to: 1) identify, review and secure the distribution rights (licenses) for each part; 2) understand the impact of an open source security vulnerability on a product; 3) enable identification of cryptography technologies (e.g., export licensing); and 4) enable accurate reporting on all open source parts as a requirement to obtain functional safety certification for safety critical products (e.g, medical devices, aircraft, autonomous driving vehicles, elevators and so forth).
 
 Ultimately a Blockchain ledger is used to established trust on who did what, when and how within the supply chain  That is, which suppliers created which parts and included which open source compliance artifacts for a manufactured product. This is particularly challenging because a mechanism is required to maintain global state information across the supply chain to achieve accountability. We solved this problem by using Linux Foundation’s Hyperledger project's Sawtooth platform to construct a Ledger that tracks which suppliers delivered which software parts that used which open source for which products and who delivered (or did not deliver) which open source compliance artifacts. We were required to define a new data construct , the **Compliance Envelope**, which represents a standard method of collecting, indexing and bundling the compliance artifacts such that the artifacts can be delivered as a single unit. We use the Ledger maintain the associate between the supplier, part and the corresponding compliance envelope. 
 
-### Example Illustration
+## Example Illustration
 
 The biggest challenge to obtaining a complete and accurate Open Source Bill of Materials (OSS-BOM) for a product (along with the other compliance artifacts) arises because software parts are provided by multiple different suppliers. Consider the simple example illustrated below  where three different suppliers provide software parts for the manufacturing of a video camera V sold by manufacturer M. Supplier S1 delivers the microprocessor accompanied by the firmware and software drivers. Supplier S2 assembles and delivers the Linux runtime operating system and Supplier S3 delivers the applications that manage the camera display, menu and various functions. Ideally, when camera V ships, it should be accompanied by a single compliance envelope that contains, as a minimum, a list of all the open source parts incorporated by the various suppliers (OSS BOMs) and the mandatory source code and legal notices.
 
@@ -23,28 +23,20 @@ The SParts project developed a Blockchain Ledger to manage this complexity, whil
 <br><br>
 <b>Figure 2</b>: Software Ledger </p>
 
-Figure 3 illustrates ledger entries that represent the parts for video camera V presented in Figure 2. Transactions 101 through 104 represent software part 37 and transactions 105 through 110 represent part 101. Transaction 111 illustrates that an additional artifact was later added to the part 37 envelope and transaction 112 illustrates that the source code was updated for part 101’s envelope. In the first instances, Supplier S1 forgot to include a notice artifact but was able to remedy it after the fact. In the second instance, Supplier S2 was able to determine that some of the mandatory/required source code was missing and to efficiently remedy the issue by simply updating the ledger. By recording software part information in the ledger, customers of both suppliers S1 and S2 would automatically receive the updates. When manufacturer M ships the video camera, they could query the ledger to obtain the latest and most comprehensive collect compliance artifacts.
+Figure 2 illustrates ledger entries that represent the parts for video camera V presented in Figure 2. Transactions 101 through 104 represent software part 37 and transactions 105 through 110 represent part 101. Transaction 111 illustrates that an additional artifact was later added to the part 37 envelope and transaction 112 illustrates that the source code was updated for part 101’s envelope. In the first instances, Supplier S1 forgot to include a notice artifact but was able to remedy it after the fact. In the second instance, Supplier S2 was able to determine that some of the mandatory/required source code was missing and to efficiently remedy the issue by simply updating the ledger. By recording software part information in the ledger, customers of both suppliers S1 and S2 would automatically receive the updates. When manufacturer M ships the video camera, they could query the ledger to obtain the latest and most comprehensive collect compliance artifacts.
 
 A more detailed discussion of the the use and benefits of a Software Ledger to track and manage the use of open source across the supply chain can be found here:
    [\[article\]](https://github.com/MarkGisi/articles-n-insights/blob/master/open-source/SoftwareLedger4SupplyChain.pdf)
    
 
-### Project Components
+## Project Components
 
-To run a blockchain managed network we developed the following components: 
+A supply chain network has two core components: a ledger and conductor, built using the Hyperledger Project's Sawtooth platform,  tracks suppliers, thier software parts, the open source components from which the software parts are constructed, and the open sourc compliance artifacts. The ledger is accessible via a RESTful API. The **conductor** system service is responsible for monitoring and managing the different supply chain network components (ledger and applications), services and resources .  The conductor should the first started component and runs 24/7 for as as long as the supply chain network services and resources are is required to be up and running. 
 
-<p align="center"><img src="./docs/images/supplychain-network.png" width="558" height="456"/>
+<p align="center"><img src="./docs/images/supplychain-network.png" width="471" height="326"/>
 <br><br>
-<b>Figure 1</b>: Video camera V, suppliers, parts, envelopes and open source artifacts 
+<b>Figure 3</b>: Supply Chain Network with core components: the ledger and conductor.
 </p>
-
-
-1. **Blockchain** **Ledger** (ledger/) - The ledger, built using the Hyperledger Project's Sawtooth platform,  tracks all the open source components and the meta data about the compliance artifacts of the open source parts to ensure the integrity of all the components used. The ledger is accessible via a RESTful API.
-2. **Admin** - Two applications are provide that provide supply chain  network administrative services: 
-   - **Conductor** (conductor/) - system service responsible for providing services, monitoring and managing the different supply chain components (ledger and applications).  This application is required to be up and running. 
-   - **Ledger Dashboard** (admin/) - an application that enables one to monitor the Ledger content
-3. **Applications**  (apps/) The apps directory contains demonstration applications that provide examples of applications to utilize the ledger:
-   {0}. **SParts Software Parts Catalog** - A website application that provides a catalog of a collection of software parts  that connects to the supply chain network that are tracked in the ledger. 
 
 In addition to the above core services the following important data objects are defined. These are the entities that are tracked within the ledger:
 
@@ -55,6 +47,6 @@ In addition to the above core services the following important data objects are 
 - **Compliance Envelope** - a construct that represents a standard method of collecting, indexing and bundling the artifacts in such a way that they can be delivered as a single unit. Regardless of whether a software offering is a simple atomic part (e.g., software library), or a more complex one such as the software runtime that controls a consumer device, the envelope contains a rich collection of information that represents all the open source parts that the offering was comprised of. 
 
 
-### Getting Started
+## Getting Started
 
 See the Getting Start document in the project's documentation directory (/doc). 
