@@ -10,7 +10,7 @@ Ultimately a Blockchain ledger is used to established trust on who did what, whe
 
 The biggest challenge to obtaining a complete and accurate Open Source Bill of Materials (OSS-BOM) for a product (along with the other compliance artifacts) arises because software parts are provided by multiple different suppliers. Consider the simple example illustrated below  where three different suppliers provide software parts for the manufacturing of a video camera V sold by manufacturer M. Supplier S1 delivers the microprocessor accompanied by the firmware and software drivers. Supplier S2 assembles and delivers the Linux runtime operating system and Supplier S3 delivers the applications that manage the camera display, menu and various functions. Ideally, when camera V ships, it should be accompanied by a single compliance envelope that contains, as a minimum, a list of all the open source parts incorporated by the various suppliers (OSS BOMs) and the mandatory source code and legal notices.
 
-<p align="center"><img src="./docs/images/video-camera-arch.png" width="789" height="528"/>
+<p align="center"><img src="./docs/images/video-camera-arch.png" width="710" height="475"/>
 <br><br>
 <b>Figure 1</b>: Video camera V, suppliers, parts, envelopes and open source artifacts 
 </p>
@@ -26,12 +26,18 @@ The SParts project developed a Blockchain Ledger to manage this complexity, whil
 Figure 3 illustrates ledger entries that represent the parts for video camera V presented in Figure 2. Transactions 101 through 104 represent software part 37 and transactions 105 through 110 represent part 101. Transaction 111 illustrates that an additional artifact was later added to the part 37 envelope and transaction 112 illustrates that the source code was updated for part 101’s envelope. In the first instances, Supplier S1 forgot to include a notice artifact but was able to remedy it after the fact. In the second instance, Supplier S2 was able to determine that some of the mandatory/required source code was missing and to efficiently remedy the issue by simply updating the ledger. By recording software part information in the ledger, customers of both suppliers S1 and S2 would automatically receive the updates. When manufacturer M ships the video camera, they could query the ledger to obtain the latest and most comprehensive collect compliance artifacts.
 
 A more detailed discussion of the the use and benefits of a Software Ledger to track and manage the use of open source across the supply chain can be found here:
-   https://github.com/MarkGisi/articles-n-insights/blob/master/open-source/SoftwareLedger4SupplyChain.pdf
+   [\[article\]](https://github.com/MarkGisi/articles-n-insights/blob/master/open-source/SoftwareLedger4SupplyChain.pdf)
    
 
-### Project Organization
+### Project Components
 
 To run a blockchain managed network we developed the following components: 
+
+<p align="center"><img src="./docs/images/supplychain-network.png" width="558" height="456"/>
+<br><br>
+<b>Figure 1</b>: Video camera V, suppliers, parts, envelopes and open source artifacts 
+</p>
+
 
 1. **Blockchain** **Ledger** (ledger/) - The ledger, built using the Hyperledger Project's Sawtooth platform,  tracks all the open source components and the meta data about the compliance artifacts of the open source parts to ensure the integrity of all the components used. The ledger is accessible via a RESTful API.
 2. **Admin** - Two applications are provide that provide supply chain  network administrative services: 
