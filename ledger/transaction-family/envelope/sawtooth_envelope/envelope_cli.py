@@ -1,5 +1,4 @@
 # Copyright 2017 Intel Corporation
-# Copyright 2017 Wind River Systems
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,13 +24,14 @@ import traceback
 import sys
 import shutil
 import pkg_resources
+import json
 
 from colorlog import ColoredFormatter
 
 import sawtooth_signing.secp256k1_signer as signing
 
-from sawtooth_envelope.envelope_client import EnvelopeClient
-from sawtooth_envelope.envelope_exceptions import EnvelopeException
+from sawtooth_envelope.envelope_batch import EnvelopeBatch
+from sawtooth_envelope.exceptions import EnvelopeException
 
 
 DISTRIBUTION_NAME = 'sawtooth-envelope'
@@ -70,8 +70,7 @@ def setup_loggers(verbose_level):
     logger.addHandler(create_console_handler(verbose_level))
 
 
-def add_create_envelope_parser(subparsers, parent_parser):
-    
+def add_create_parser(subparsers, parent_parser):
     parser = subparsers.add_parser('create', parents=[parent_parser])
 
     parser.add_argument(
@@ -119,7 +118,6 @@ def add_create_envelope_parser(subparsers, parent_parser):
         'openchain',
         type=str,
         help='provide artifact Open Chain status')
-    
 
     parser.add_argument(
         '--disable-client-validation',
@@ -142,18 +140,32 @@ def add_init_parser(subparsers, parent_parser):
         help='the url of the REST API')
 
 
+
 def add_list_envelope_parser(subparsers, parent_parser):
     subparsers.add_parser('list-envelope', parents=[parent_parser])
 
 
-def add_show_envelope_parser(subparsers, parent_parser):
-    parser = subparsers.add_parser('show-envelope', parents=[parent_parser])
+def add_retrieve_envelope_parser(subparsers, parent_parser):
+    parser = subparsers.add_parser('retrieve', parents=[parent_parser])
 
     parser.add_argument(
         'artifact_id',
         type=str,
-        help='the identifier for the envelope')
+        help='the identifier for the artifact')
 
+
+def add_artifact_parser(subparsers, parent_parser):
+    parser = subparsers.add_parser('AddArtifact', parents=[parent_parser])
+    
+    parser.add_argument(
+        'artifact_id',
+        type=str,
+        help='the identifier for the artifact')
+
+    parser.add_argument(
+        'sub_artifact_id',
+        type=str,
+        help='the UUID identifier for sub artifact')
 
 
 def create_parent_parser(prog_name):
@@ -187,18 +199,7 @@ def create_parent_parser(prog_name):
 
     return parent_parser
 
-def add_sub_artifact_parser(subparsers, parent_parser):
-    parser = subparsers.add_parser('AddArtifact', parents=[parent_parser])
-    
-    parser.add_argument(
-        'artifact_id',
-        type=str,
-        help='the identifier for the artifact')
 
-    parser.add_argument(
-        'sub_artifact_id',
-        type=str,
-        help='the UUID identifier for sub artifact')
 def create_parser(prog_name):
     parent_parser = create_parent_parser(prog_name)
 
@@ -208,12 +209,13 @@ def create_parser(prog_name):
 
     subparsers = parser.add_subparsers(title='subcommands', dest='command')
 
-    add_create_envelope_parser(subparsers, parent_parser)
-    add_init_parser(subparsers, parent_parser)
+    add_create_parser(subparsers, parent_parser)
+    add_init_parser(subparsers, parent_parser) 
     add_list_envelope_parser(subparsers, parent_parser)
-    add_show_envelope_parser(subparsers, parent_parser)
-    add_sub_artifact_parser(subparsers,parent_parser)
-
+    add_retrieve_envelope_parser(subparsers, parent_parser)
+    add_artifact_parser(subparsers, parent_parser)
+    
+    
     return parser
 
 
@@ -262,41 +264,59 @@ def do_init(args, config):
 
 
 
-
-def do_envelope_list(args, config):
+def do_list_envelope(args, config):
     url = config.get('DEFAULT', 'url')
     key_file = config.get('DEFAULT', 'key_file')
     auth_user, auth_password = _get_auth_info(args)
 
-    client = EnvelopeClient(base_url=url, keyfile=key_file)
-    envelope_list = client.list(auth_user=auth_user,
+    client = EnvelopeBatch(base_url=url, keyfile=key_file)
+
+    result = client.list_artifact(auth_user=auth_user,
                                  auth_password=auth_password)
 
-    if envelope_list is not None:
-        print(envelope_list)
+    if result is not None:
+        print (result)
     else:
-        raise EnvelopeException("Could not retrieve envelope listing.")
+        raise EnvelopeException("Could not retrieve artifact listing.")
+
+def removekey(d,key):
+    r = dict(d)
+    del r[key]
+    return r
 
 
-def do_envelope_show(args, config):
+def filter_output(result):
+    
+    mylist = result.split(',',1)
+    newstr = mylist[1]
+    jsonStr = newstr.replace('artifact_id','uuid').replace('artifact_name','filename').replace('artifact_checksum','checksum').replace('artifact_type','content_type')
+    data = json.loads(jsonStr)
+    data = removekey(data,'sub_artifact')
+    jsonStr = json.dumps(data)
+    return jsonStr
+
+def do_retrieve_envelope(args, config):
     artifact_id = args.artifact_id
 
     url = config.get('DEFAULT', 'url')
     key_file = config.get('DEFAULT', 'key_file')
     auth_user, auth_password = _get_auth_info(args)
 
-    client = EnvelopeClient(base_url=url, keyfile=key_file)
+    client = EnvelopeBatch(base_url=url, keyfile=key_file)
 
-    result = client.show(artifact_id, auth_user=auth_user, auth_password=auth_password)
+    result = client.retrieve_artifact(artifact_id, auth_user=auth_user, auth_password=auth_password).decode()
 
     if result is not None:
+        result = filter_output(result)
         print(result)
+     
     else:
-        raise EnvelopeException("envelope not found {}".format(artifact_id))
+        raise EnvelopeException("Artifact not found {}".format(artifact_id))
 
 
 
-def do_envelope_create(args, config):
+def do_create(args, config):
+    
     artifact_id = args.artifact_id
     short_id = args.short_id
     artifact_name = args.artifact_name
@@ -311,23 +331,15 @@ def do_envelope_create(args, config):
     key_file = config.get('DEFAULT', 'key_file')
     auth_user, auth_password = _get_auth_info(args)
 
-    client = EnvelopeClient(base_url=url, keyfile=key_file)
-    
-    response = client.create(artifact_id,short_id,artifact_name,artifact_type,artifact_checksum,path,uri,label,openchain,auth_user,auth_password)
+    client = EnvelopeBatch(base_url=url, keyfile=key_file)
 
-    print("Response: {}".format(response))
-
-def do_add_sub_artifact(args, config):
-    artifact_id = args.artifact_id
-    sub_artifact_id = args.sub_artifact_id
    
-    url = config.get('DEFAULT', 'url')
-    key_file = config.get('DEFAULT', 'key_file')
-    auth_user, auth_password = _get_auth_info(args)
-    client = EnvelopeClient(base_url=url,
-                      keyfile=key_file)
-    response = client.add_artifact(artifact_id,sub_artifact_id,auth_user,auth_password)
-    print("Response {}".format(response))
+    response = client.create(
+            artifact_id,short_id,artifact_name,artifact_type,artifact_checksum,path,uri,label,openchain,
+            auth_user=auth_user,
+            auth_password=auth_password)
+    
+    print_msg(response)
 
 
 
@@ -364,6 +376,12 @@ def save_config(config):
     os.rename("{}.new".format(config_file), config_file)
 
 
+def print_msg(response):
+    if "batch_status?id" in response:
+        print ("{\"status\":\"success\"}")
+    else:
+        print ("{\"status\":\"exception\"}")
+
 def _get_auth_info(args):
     auth_user = args.auth_user
     auth_password = args.auth_password
@@ -389,24 +407,45 @@ def main(prog_name=os.path.basename(sys.argv[0]), args=None):
     config = load_config()
 
     if args.command == 'create':
-        do_envelope_create(args, config)
+        do_create(args, config)
     elif args.command == 'init':
-        do_init(args, config)
+        do_init(args, config)  
     elif args.command == 'list-envelope':
-        do_envelope_list(args, config)
-    elif args.command == 'show-envelope':
-        do_envelope_show(args, config)
+        do_list_envelope(args, config)
+    elif args.command == 'retrieve':
+        do_retrieve_envelope(args, config)
     elif args.command == 'AddArtifact':
-        do_add_sub_artifact(args, config)       
- 
+        do_add_sub_artifact(args, config)  
+
     else:
         raise EnvelopeException("invalid command: {}".format(args.command))
+
+
+def do_add_sub_artifact(args, config):
+    artifact_id = args.artifact_id
+    sub_artifact_id = args.sub_artifact_id
+   
+    url = config.get('DEFAULT', 'url')
+    key_file = config.get('DEFAULT', 'key_file')
+    auth_user, auth_password = _get_auth_info(args)
+
+    client = EnvelopeBatch(base_url=url,
+                      keyfile=key_file)
+    response = client.add_artifact(artifact_id,sub_artifact_id,auth_user=auth_user,auth_password=auth_password)
+    print("Response {}".format(response))
 
 def main_wrapper():
     try:
         main()
     except EnvelopeException as err:
-        print("Error: {}".format(err), file=sys.stderr)
+        errmsg = str(err)
+        if '404' in errmsg:
+            print("{\"status\":\"404 Not Found\"}")
+        else:
+            message = "{\"error\":\"failed\",\"error_message\":\""
+            closing_str = "\"}"
+            print (message+errmsg+closing_str)
+            
         sys.exit(1)
     except KeyboardInterrupt:
         pass
