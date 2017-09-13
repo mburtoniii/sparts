@@ -1,6 +1,6 @@
 # Copyright 2017 Intel Corporation
-# Copyright 2017 Wind River Systems
-#
+# Copyright 2017 Wind River
+
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -25,13 +25,14 @@ import traceback
 import sys
 import shutil
 import pkg_resources
+import json
 
 from colorlog import ColoredFormatter
 
 import sawtooth_signing.secp256k1_signer as signing
 
-from sawtooth_part.part_client import PartClient
-from sawtooth_part.part_exceptions import PartException
+from sawtooth_part.part_batch import PartBatch
+from sawtooth_part.exceptions import PartException
 
 
 DISTRIBUTION_NAME = 'sawtooth-part'
@@ -70,8 +71,7 @@ def setup_loggers(verbose_level):
     logger.addHandler(create_console_handler(verbose_level))
 
 
-def add_create_part_parser(subparsers, parent_parser):
-    
+def add_create_parser(subparsers, parent_parser):
     parser = subparsers.add_parser('create', parents=[parent_parser])
 
     parser.add_argument(
@@ -113,7 +113,7 @@ def add_create_part_parser(subparsers, parent_parser):
         'description',
         type=str,
         help='provide description')
-    
+
 
     parser.add_argument(
         '--disable-client-validation',
@@ -136,27 +136,27 @@ def add_init_parser(subparsers, parent_parser):
         help='the url of the REST API')
 
 
+
 def add_list_part_parser(subparsers, parent_parser):
     subparsers.add_parser('list-part', parents=[parent_parser])
 
 
-def add_show_part_parser(subparsers, parent_parser):
-    parser = subparsers.add_parser('show-part', parents=[parent_parser])
+def add_retrieve_parser(subparsers, parent_parser):
+    parser = subparsers.add_parser('retrieve', parents=[parent_parser])
 
     parser.add_argument(
         'pt_id',
         type=str,
-        help='the identifier for the part')
-    
-    
+        help='part identifier')
 
-def add_envelope_relation_parser(subparsers, parent_parser):
+
+def add_envelope_parser(subparsers, parent_parser):
     parser = subparsers.add_parser('AddEnvelope', parents=[parent_parser])
     
     parser.add_argument(
         'pt_id',
         type=str,
-        help='the UUID identifier for the part')
+        help='part identifier')
 
     parser.add_argument(
         'envelope_id',
@@ -205,16 +205,44 @@ def create_parser(prog_name):
 
     subparsers = parser.add_subparsers(title='subcommands', dest='command')
 
-    add_create_part_parser(subparsers, parent_parser)
+    add_create_parser(subparsers, parent_parser)
     add_init_parser(subparsers, parent_parser)
     add_list_part_parser(subparsers, parent_parser)
-    add_show_part_parser(subparsers, parent_parser)
-    add_envelope_relation_parser(subparsers, parent_parser)
+    add_retrieve_parser(subparsers, parent_parser)
+    add_envelope_parser(subparsers, parent_parser)
     add_supplier_parser(subparsers,parent_parser)
     add_category_parser(subparsers,parent_parser)
-    
+
     return parser
 
+
+def add_category_parser(subparsers, parent_parser):
+    parser = subparsers.add_parser('AddCategory', parents=[parent_parser])
+    
+    parser.add_argument(
+        'pt_id',
+        type=str,
+        help='the identifier for the part')
+
+    parser.add_argument(
+        'category_id',
+        type=str,
+        help='the identifier for Supplier')
+
+# Provide the UUID of the parent artifact and the UUID of the supplier
+def add_supplier_parser(subparsers, parent_parser):
+    parser = subparsers.add_parser('AddSupplier', parents=[parent_parser])
+    
+    parser.add_argument(
+        'pt_id',
+        type=str,
+        help='the identifier for the part')
+
+    parser.add_argument(
+        'supplier_id',
+        type=str,
+        help='the identifier for Supplier')
+    
 
 def do_init(args, config):
     username = config.get('DEFAULT', 'username')
@@ -262,67 +290,54 @@ def do_init(args, config):
 
 
 
-def do_part_list(args, config):
+def do_list_part(args, config):
     url = config.get('DEFAULT', 'url')
     key_file = config.get('DEFAULT', 'key_file')
     auth_user, auth_password = _get_auth_info(args)
 
-    client = PartClient(base_url=url, keyfile=key_file)
-    part_list = client.list(auth_user=auth_user,
+    client = PartBatch(base_url=url, keyfile=key_file)
+
+    result = client.list_part(auth_user=auth_user,
                                  auth_password=auth_password)
 
-    if part_list is not None:
-        print(part_list)
+    if result is not None:
+        print (result)
     else:
         raise PartException("Could not retrieve part listing.")
 
 
-def add_category_parser(subparsers, parent_parser):
-    parser = subparsers.add_parser('AddCategory', parents=[parent_parser])
+def do_retrieve(args, config):
     
-    parser.add_argument(
-        'pt_id',
-        type=str,
-        help='the UUID identifier for the part')
-
-    parser.add_argument(
-        'category_id',
-        type=str,
-        help='the UUID identifier for Supplier')
-
-
-def add_supplier_parser(subparsers, parent_parser):
-    parser = subparsers.add_parser('AddSupplier', parents=[parent_parser])
-    
-    parser.add_argument(
-        'pt_id',
-        type=str,
-        help='the UUID identifier for the part')
-
-    parser.add_argument(
-        'supplier_id',
-        type=str,
-        help='the UUID identifier for Supplier')
-
-def do_part_show(args, config):
     pt_id = args.pt_id
 
     url = config.get('DEFAULT', 'url')
     key_file = config.get('DEFAULT', 'key_file')
     auth_user, auth_password = _get_auth_info(args)
 
-    client = PartClient(base_url=url, keyfile=key_file)
+    client = PartBatch(base_url=url, keyfile=key_file)
 
-    result = client.show(pt_id, auth_user=auth_user, auth_password=auth_password)
+    result = client.retrieve_part(pt_id, auth_user=auth_user, auth_password=auth_password).decode()
 
     if result is not None:
+        result = filter_output(result)
         print(result)
+     
     else:
-        raise PartException("part not found {}".format(pt_id))
+        raise PartException("Part not found: {}".format(pt_id))
 
 
 
-def do_part_create(args, config):
+def filter_output(result):
+    
+    mylist = result.split(',',1)
+    newstr = mylist[1]
+    jsonStr = newstr.replace('pt_id','uuid').replace('pt_name','name')
+    data = json.loads(jsonStr)
+    jsonStr = json.dumps(data)
+    return jsonStr
+
+def do_create(args, config):
+    #make changes
     pt_id = args.pt_id
     pt_name = args.pt_name
     checksum = args.checksum
@@ -336,14 +351,61 @@ def do_part_create(args, config):
     key_file = config.get('DEFAULT', 'key_file')
     auth_user, auth_password = _get_auth_info(args)
 
-    client = PartClient(base_url=url, keyfile=key_file)
+    client = PartBatch(base_url=url, keyfile=key_file)
 
-    response = client.create(pt_id,pt_name,checksum,version,src_uri,licensing,label,description,auth_user=auth_user,
+   
+    response = client.create(
+            pt_id,pt_name,checksum,version,src_uri,licensing,label,description,
+            auth_user=auth_user,
             auth_password=auth_password)
+    print_msg(response)
 
+
+
+def add_Category(args, config):
+    pt_id = args.pt_id
+    category_id = args.category_id
+   
+    url = config.get('DEFAULT', 'url')
+    key_file = config.get('DEFAULT', 'key_file')
+
+    client = PartBatch(base_url=url,
+                      keyfile=key_file)
+    response = client.add_category(pt_id,category_id)
     print("Response: {}".format(response))
 
 
+def do_add_envelope(args, config):
+    pt_id = args.pt_id
+    envelope_id = args.envelope_id
+   
+    url = config.get('DEFAULT', 'url')
+    key_file = config.get('DEFAULT', 'key_file')
+
+    client = PartBatch(base_url=url,
+                      keyfile=key_file)
+    response = client.add_envelope(pt_id,envelope_id)
+    print("Response: {}".format(response))
+
+
+def print_msg(response):
+    if "batch_status?id" in response:
+        print ("{\"status\":\"success\"}")
+    else:
+        print ("{\"status\":\"exception\"}")
+
+# add the relationship between parent artifact and supplier
+def add_Supplier(args, config):
+    pt_id = args.pt_id
+    supplier_id = args.supplier_id
+   
+    url = config.get('DEFAULT', 'url')
+    key_file = config.get('DEFAULT', 'key_file')
+
+    client = PartBatch(base_url=url,
+                      keyfile=key_file)
+    response = client.add_supplier(pt_id,supplier_id)
+    print("Response: {}".format(response))
 
 def load_config():
     home = os.path.expanduser("~")
@@ -387,47 +449,6 @@ def _get_auth_info(args):
     return auth_user, auth_password
 
 
-def do_add_envelope(args, config):
-    pt_id = args.pt_id
-    envelope_id = args.envelope_id
-   
-    url = config.get('DEFAULT', 'url')
-    key_file = config.get('DEFAULT', 'key_file')
-    auth_user, auth_password = _get_auth_info(args)
-    client = PartClient(base_url=url,
-                      keyfile=key_file)
-    response = client.add_envelope(pt_id,envelope_id,auth_user,auth_password)
-    print("Response: {}".format(response))
-
-
-# add the relationship between parent artifact and supplier
-def do_add_supplier(args, config):
-    pt_id = args.pt_id
-    supplier_id = args.supplier_id
-   
-    url = config.get('DEFAULT', 'url')
-    key_file = config.get('DEFAULT', 'key_file')
-    auth_user, auth_password = _get_auth_info(args)
-    client = PartClient(base_url=url,
-                      keyfile=key_file)
-    response = client.AddSupplier(pt_id,supplier_id,auth_user,auth_password)
-    print("Response: {}".format(response))
-    
-    
-# add the relationship between parent artifact and supplier
-def do_add_category(args, config):
-    pt_id = args.pt_id
-    category_id = args.category_id
-   
-    url = config.get('DEFAULT', 'url')
-    key_file = config.get('DEFAULT', 'key_file')
-    auth_user, auth_password = _get_auth_info(args)
-    client = PartClient(base_url=url,
-                      keyfile=key_file)
-    response = client.AddCategory(pt_id,category_id,auth_user,auth_password)
-    print("Response: {}".format(response))
-
-
 def main(prog_name=os.path.basename(sys.argv[0]), args=None):
     if args is None:
         args = sys.argv[1:]
@@ -444,28 +465,35 @@ def main(prog_name=os.path.basename(sys.argv[0]), args=None):
     config = load_config()
 
     if args.command == 'create':
-        do_part_create(args, config)
+        do_create(args, config)
     elif args.command == 'init':
         do_init(args, config)
+  
     elif args.command == 'list-part':
-        do_part_list(args, config)
-    elif args.command == 'show-part':
-        do_part_show(args, config)    
+        do_list_part(args, config)
+    elif args.command == 'retrieve':
+        do_retrieve(args, config)
     elif args.command == 'AddEnvelope':
-        do_add_envelope(args, config) 
+        do_add_envelope(args, config)     
     elif args.command == 'AddSupplier':
-        do_add_supplier(args, config) 
+        add_Supplier(args, config)     
     elif args.command == 'AddCategory':
-        do_add_category(args, config) 
- 
+        add_Category(args, config)          
     else:
         raise PartException("invalid command: {}".format(args.command))
+
 
 def main_wrapper():
     try:
         main()
     except PartException as err:
-        print("Error: {}".format(err), file=sys.stderr)
+        errmsg = str(err)
+        if '404' in errmsg:
+            print("{\"status\":\"404 Not Found\"}")
+        else:
+            msg = "{\"error\":\"failed\",\"error_message\":\""
+            closing_str = "\"}"
+            print (msg+errmsg+closing_str)
         sys.exit(1)
     except KeyboardInterrupt:
         pass

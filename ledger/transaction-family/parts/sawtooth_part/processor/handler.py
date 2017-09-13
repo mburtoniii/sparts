@@ -1,6 +1,5 @@
 # Copyright 2016 Intel Corporation
-# Copyright 2017 Wind River Systems
-#
+# Copyright 2017 Wind River 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,8 +16,6 @@
 import hashlib
 import logging
 import json
-from collections import OrderedDict
-
 from sawtooth_sdk.processor.state import StateEntry
 from sawtooth_sdk.processor.exceptions import InvalidTransaction
 from sawtooth_sdk.processor.exceptions import InternalError
@@ -33,7 +30,7 @@ class PartTransactionHandler:
 
     @property
     def family_name(self):
-        return 'part'
+        return 'pt'
 
     @property
     def family_versions(self):
@@ -46,69 +43,74 @@ class PartTransactionHandler:
     @property
     def namespaces(self):
         return [self._namespace_prefix]
-    
- 
+
     def apply(self, transaction, state_store):
 
-        # Deserialize the transaction and verify it is valid
-        pt_id,pt_name,checksum,version,src_uri,licensing,label,description,action,envelope_id,category_id,supplier_id,signer = extract_transaction(transaction)
-
-      
-        if  pt_id  == "":
-            raise InvalidTransaction("part Data is required")
-
-        if action == "":
-            raise InvalidTransaction("Action is required")
-
-        # Checks to see if the action is valid or not
-        if action not in ("create","list-part","show-part","AddEnvelope","AddCategory","AddSupplier"):
-            raise InvalidTransaction("Invalid Action '{}'".format(action))
-
-        data_address = self._namespace_prefix \
-            + hashlib.sha512(pt_id.encode("utf-8")).hexdigest()
-
-        # Retrieve data from address
-        state_entries = state_store.get([data_address])
+        header = TransactionHeader()
+        header.ParseFromString(transaction.header)
         
-        # Checks to see if the list is not empty
+        try:
+            # The payload is csv utf-8 encoded string
+            pt_id,pt_name,checksum,version,src_uri,licensing,label,description,action,envelope_id,category_id,supplier_id = transaction.payload.decode().split(",")
+        except ValueError:
+            raise InvalidTransaction("Invalid payload serialization")
+        
+        validate_transaction( pt_id,pt_name,checksum,version,src_uri,licensing,label,description,action,envelope_id,category_id,supplier_id)  
+             
+        data_address = make_part_address(self._namespace_prefix,pt_id)
+        
+        # Retrieve the data from state storage  
+        state_entries = state_store.get([data_address])
+       
+     
         if len(state_entries) != 0:
             try:
                    
                     stored_pt_id, stored_pt_str = \
-                    state_entries[0].data.decode().split(",",1)          
+                    state_entries[0].data.decode().split(",",1)
+                             
                     stored_pt = json.loads(stored_pt_str)
             except ValueError:
                 raise InternalError("Failed to deserialize data.")
             
+
         else:
             stored_pt_id = stored_pt = None
-            
+      
         
         if action == "create" and stored_pt_id is not None:
-            raise InvalidTransaction("Invalid Action-part already exists.")
-               
+            raise InvalidTransaction("Invalid part already exists.")
+
+        elif action == "AddEnvelope" or action == "AddSupplier" or action == "AddCategory":
+            if stored_pt_id is None:
+                raise InvalidTransaction(
+                    "Invalid the operation requires an existing part."
+                )
            
         if action == "create":
             pt = create_part(pt_id,pt_name,checksum,version,src_uri,licensing,label,description)
             stored_pt_id = pt_id
             stored_pt = pt
             _display("Created a part.")
-            
+          
+          
         if action == "AddEnvelope":
             if envelope_id not in stored_pt_str:
-                pt_env = add_envelope(envelope_id,stored_pt)
-                stored_pt = pt_env
+                pt = add_envelope(envelope_id,stored_pt)
+                stored_pt = pt
             
         if action == "AddSupplier":
             if supplier_id not in stored_pt_str:
-                pt_supp = add_supplier(supplier_id,stored_pt)
-                stored_pt = pt_supp
+                pt = add_supplier(supplier_id,stored_pt)
+                stored_pt = pt
         
         if action == "AddCategory":
             if category_id not in stored_pt_str:
-                pt_cat = add_category(category_id,stored_pt)
-                stored_pt = pt_cat
-   
+                pt = add_category(category_id,stored_pt)
+                stored_pt = pt
+        
+      
+        # 6. Put data back in state storage
         stored_pt_str = json.dumps(stored_pt)
         addresses = state_store.set([
             StateEntry(
@@ -116,56 +118,56 @@ class PartTransactionHandler:
                 data=",".join([stored_pt_id, stored_pt_str]).encode()
             )
         ])
-        
-        if len(addresses) < 1:
-            raise InternalError("State Error")
-        
+        return addresses
 
-
+        
+        
 def add_envelope(uuid,parent_pt):
     
-    pt_envelope_list = parent_pt['envelopes']
-    pt_envelope_dic = {'envelope_id': uuid}
-    pt_envelope_list.append(pt_envelope_dic)
-    parent_pt['envelopes'] = pt_envelope_list
+    pt_list = parent_pt['envelopes']
+    pt_dic = {'envelope_id': uuid}
+    pt_list.append(pt_dic)
+    parent_pt['envelopes'] = pt_list
     return parent_pt  
 
 
 def add_supplier(uuid,parent_pt):
     
-    pt_supplier_list = parent_pt['suppliers']
-    pt_supplier_dic = {'supplier_id': uuid}
-    pt_supplier_list.append(pt_supplier_dic)
-    parent_pt['suppliers'] = pt_supplier_list
+    pt_list = parent_pt['suppliers']
+    pt_dic = {'supplier_id': uuid}
+    pt_list.append(pt_dic)
+    parent_pt['suppliers'] = pt_list
     return parent_pt     
 
 def add_category(uuid,parent_pt):
     
-    pt_cat_list = parent_pt['categories']
-    pt_cat_dic = {'category_id': uuid}
-    pt_cat_list.append(pt_cat_dic)
-    parent_pt['categories'] = pt_cat_list
+    pt_list = parent_pt['categories']
+    pt_dic = {'category_id': uuid}
+    pt_list.append(pt_dic)
+    parent_pt['categories'] = pt_list
     return parent_pt        
 
 
 def create_part(pt_id,pt_name,checksum,version,src_uri,licensing,label,description):
-    pt = {'pt_id': pt_id,'pt_name': pt_name,'checksum': checksum,'version': version,'src_uri':src_uri,'licensing':licensing,'label':label,'description':description,'envelopes':[],'suppliers':[],'categories':[]}
-    return pt
-        
+    ptD = {'pt_id': pt_id,'pt_name': pt_name,'checksum': checksum,'version': version,'src_uri':src_uri,'licensing':licensing,'label':label,'description':description,'envelopes':[],'suppliers':[],'categories':[]}
+    return ptD 
 
-def extract_transaction(transaction):
-    
-    header = TransactionHeader()
-    header.ParseFromString(transaction.header)
-    # The transaction signer is the player
-    signer = header.signer_pubkey
 
-    try:
-        pt_id,pt_name,checksum,version,src_uri,licensing,label,description,action,envelope_id,category_id,supplier_id = transaction.payload.decode().split(",")
-    except ValueError:
-        raise InvalidTransaction("Invalid payload serialization")
-    
-    return pt_id,pt_name,checksum,version,src_uri,licensing,label,description,action,envelope_id,category_id,supplier_id, signer
+def validate_transaction( pt_id,pt_name,checksum,version,src_uri,licensing,label,description,action,envelope_id,category_id,supplier_id):
+    if not pt_id:
+        raise InvalidTransaction('Part ID is required')
+ 
+    if not action:
+        raise InvalidTransaction('Action is required')
+
+    if action not in ("AddEnvelope", "create","AddCategory","AddSupplier","list-part","retrieve"):
+        raise InvalidTransaction('Invalid action: {}'.format(action))
+
+
+def make_part_address(namespace_prefix, part_id):
+    return namespace_prefix + \
+        hashlib.sha512(part_id.encode('utf-8')).hexdigest()[:64]
+
 
 def _display(msg):
     n = msg.count("\n")
@@ -181,4 +183,3 @@ def _display(msg):
     for line in msg:
         LOGGER.debug("+ " + line.center(length) + " +")
     LOGGER.debug("+" + (length + 2) * "-" + "+")
-        
