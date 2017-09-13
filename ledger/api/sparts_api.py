@@ -1,5 +1,4 @@
-# ------------------------------------------------------------------------------
-# Copyright 2017 Wind River Systems
+#copyright 2017 Wind River Systems
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -22,7 +21,7 @@ app = Flask(__name__)
 @app.route('/api/sparts/ledger/envelopes', methods=['GET'])
 def get_envelopes():
 	try:
-		cmd = "comp list"
+		cmd = "comp list-envelope"
 		process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
 		process.wait()
 		output = "" 
@@ -37,7 +36,7 @@ def get_envelopes():
 @app.route('/api/sparts/ledger/envelopes/<string:envelope_id>',methods=['GET'])
 def get_envelope(envelope_id):
 	try:
-		cmd = "comp show " + envelope_id
+		cmd = "comp retrieve " + envelope_id
 		process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
 		process.wait()
 		output = ''
@@ -53,7 +52,7 @@ def get_envelope(envelope_id):
 @app.route('/api/sparts/ledger/categories', methods=['GET'])
 def get_categories():
 	try:
-		cmd = "category list"
+		cmd = "category list-category"
 		process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
 		process.wait()
 		output = ""
@@ -68,7 +67,7 @@ def get_categories():
 @app.route('/api/sparts/ledger/suppliers', methods=['GET'])
 def get_suppliers():
         try:
-                cmd = "supplier list"
+                cmd = "supplier list-supplier"
                 process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
                 process.wait()
                 output = ''
@@ -87,7 +86,7 @@ def ret_exception(exception):
 @app.route('/api/sparts/ledger/categories/<string:category_id>', methods=['GET'])
 def get_category(category_id):
 	try:
-		cmd = "category show " + category_id
+		cmd = "category retrieve " + category_id
 		process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
 		process.wait()
 		output = ''
@@ -102,7 +101,7 @@ def get_category(category_id):
 @app.route('/api/sparts/ledger/suppliers/<string:supplier_id>', methods=['GET'])
 def get_supplier(supplier_id):
 	try:
-		cmd = "supplier show " + supplier_id
+		cmd = "supplier retrieve " + supplier_id
 		process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
 		process.wait()
 		output = ''
@@ -117,7 +116,7 @@ def get_supplier(supplier_id):
 @app.route('/api/sparts/ledger/parts', methods=['GET'])
 def get_parts():
 	try:
-		cmd = "pt list"
+		cmd = "pt list-part"
 		process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
 		process.wait()
 		output = ''
@@ -132,7 +131,7 @@ def get_parts():
 @app.route('/api/sparts/ledger/parts/<string:part_id>', methods=['GET'])
 def get_part(part_id):
 	try:	
-		cmd = "pt show " + part_id
+		cmd = "pt retrieve " + part_id
 		process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
 		process.wait()
 		output = ''
@@ -154,7 +153,6 @@ def create_supplier():
 	try:
 		if not request.json or not 'uuid' in request.json:
 			return 'Invalid JSON'
-		sp = " "
 		uuid = request.json['uuid']
 		short_id = request.json['short_id']
 		short_id = format_str(short_id) 
@@ -165,7 +163,7 @@ def create_supplier():
 		url = request.json['url']
 		url = format_str(url) 
         	
-		cmd = "supplier create " + uuid + sp + short_id + sp + str(name) + sp + passwd + sp + str(url)
+		cmd = "supplier create " + uuid + " " + short_id + " " + str(name) + " " + passwd + " " + str(url)
 		cmd = shlex.split(cmd)
 	
 		process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
@@ -242,9 +240,8 @@ def add_supplier_to_part():
                 if not request.json or not 'part_uuid' or not 'supplier_uuid' in request.json:
                         return 'Invalid JSON'
                 uuid = request.json['part_uuid']
-		sp = " "
                 supplier_uuid= request.json['supplier_uuid']
-                cmd = "pt AddSupplier " + uuid + sp + supplier_uuid
+                cmd = "pt AddSupplier " + uuid + " " + supplier_uuid
                 cmd = shlex.split(cmd)
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 process.wait()
@@ -281,9 +278,8 @@ def add_category_to_part():
                 if not request.json or not 'part_uuid' or not 'category_uuid' in request.json:
                         return 'Invalid JSON'
                 uuid = request.json['part_uuid']
-		sp = " "
                 category_uuid = request.json['category_uuid']
-                cmd = "pt AddCategory " + uuid + sp + category_uuid
+                cmd = "pt AddCategory " + uuid + " " + category_uuid
                 cmd = shlex.split(cmd)
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 process.wait()
@@ -302,12 +298,11 @@ def create_category():
 		if not request.json or not 'uuid' in request.json:
 			return 'Invalid JSON'
 		uuid = request.json['uuid']
-		sp = " "
 		name = request.json['name']
 		name = format_str(name) 
 		description = request.json['description']
 		description = format_str(description)
-		cmd = "category create " + uuid + sp + str(name) + sp + str(description)
+		cmd = "category create " + uuid + " " + str(name) +" " + str(description)
 		cmd = shlex.split(cmd)
 		process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 		process.wait()
@@ -320,7 +315,7 @@ def create_category():
 		return exp
 
 
-def create_artifact_cmd(uuid,short_id,filename,content_type,checksum,path,uri,label,openchain)
+def create_artifact_cmd(uuid,short_id,filename,content_type,checksum,path,uri,label,openchain):
 	cmd = "comp create " + uuid + " " + str(short_id) + " "  + str(filename) + " " + str(content_type) + " " + checksum + " " + str(path) + " " + str(uri) + " " + str(label) + " " + str(openchain)
 	return cmd
 
