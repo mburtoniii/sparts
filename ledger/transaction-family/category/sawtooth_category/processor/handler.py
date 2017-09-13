@@ -1,5 +1,4 @@
 # Copyright 2016 Intel Corporation
-# Copyright 2017 Wind River Systems
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +17,6 @@ import hashlib
 import logging
 import json
 from collections import OrderedDict
-
 from sawtooth_sdk.processor.state import StateEntry
 from sawtooth_sdk.processor.exceptions import InvalidTransaction
 from sawtooth_sdk.processor.exceptions import InternalError
@@ -46,37 +44,29 @@ class CategoryTransactionHandler:
     @property
     def namespaces(self):
         return [self._namespace_prefix]
-    
- 
+
     def apply(self, transaction, state_store):
 
-        # Deserialize the transaction and verify it is valid
-        category_id,category_name,description,action,signer = extract_transaction(transaction)
+        header = TransactionHeader()
+        header.ParseFromString(transaction.header)
 
-      
-        if  category_id  == "":
-            raise InvalidTransaction("category Data is required")
+        try:
+            # The payload is csv utf-8 encoded string
+            category_id,category_name,description,action = transaction.payload.decode().split(",")
+        except ValueError:
+            raise InvalidTransaction("Invalid payload")
 
-        if action == "":
-            raise InvalidTransaction("Action is required")
-
-        # Checks to see if the action is valid or not
-        if action not in ("create","list-category","show-category","update-category"):
-            raise InvalidTransaction("Invalid Action '{}'".format(action))
-
-        data_address = self._namespace_prefix \
-            + hashlib.sha512(category_id.encode("utf-8")).hexdigest()
-
-        # Retrieve data from address
+        validate_transaction( category_id,category_name,description,action)
+               
+        data_address = create_category_address(self._namespace_prefix,category_id)
+          
         state_entries = state_store.get([data_address])
-        
-        # Checks to see if the list is not empty
+        # Retrieve data from state storage
         if len(state_entries) != 0:
             try:
                    
                     stored_category_id, stored_category_str = \
-                    state_entries[0].data.decode().split(",",1)
-                             
+                    state_entries[0].data.decode().split(",",1)                    
                     stored_category = json.loads(stored_category_str)
             except ValueError:
                 raise InternalError("Failed to deserialize data.")
@@ -84,49 +74,48 @@ class CategoryTransactionHandler:
         else:
             stored_category_id = stored_category = None
             
-        # 3. Validate the envelope data
+        # Validate category data
         if action == "create" and stored_category_id is not None:
             raise InvalidTransaction("Invalid Action-category already exists.")
                
            
         if action == "create":
-            category = create_category(category_id,category_name,description)
+            category = create_category_payload(category_id,category_name,description)
             stored_category_id = category_id
             stored_category = category
             _display("Created a category.")
-   
-        stored_cat_str = json.dumps(stored_category)
-        addresses = state_store.set([
+                
+        # Insert data back
+        stored_supp_str = json.dumps(stored_category)
+        address = state_store.set([
             StateEntry(
                 address=data_address,
-                data=",".join([stored_category_id, stored_cat_str]).encode()
+                data=",".join([stored_category_id, stored_supp_str]).encode()
             )
         ])
+        return address
         
-        if len(addresses) < 1:
-            raise InternalError("State Error")
         
-
-# Create an envelope payload record
-def create_category(category_id,category_name,description):
-    categoryD = OrderedDict()
-    categoryD = {'category_id': category_id,'category_name': category_name,'description': description}
-    return categoryD 
+def create_category_payload(category_id,category_name,description):
+    categoryP = {'category_id': category_id,'category_name': category_name,'description': description}
+    return categoryP 
 
 
-def extract_transaction(transaction):
+def validate_transaction( category_id,category_name,description,action):
+    if not category_id:
+        raise InvalidTransaction('Category ID is required')
     
-    header = TransactionHeader()
-    header.ParseFromString(transaction.header)
-    # The transaction signer is the player
-    signer = header.signer_pubkey
+    if not action:
+        raise InvalidTransaction('Action is required')
 
-    try:
-        category_id,category_name,description,action = transaction.payload.decode().split(",")
-    except ValueError:
-        raise InvalidTransaction("Invalid payload serialization")
+    if action not in ('create','list-category','retrieve'):
+        raise InvalidTransaction('Invalid action: {}'.format(action))
+
     
-    return category_id,category_name,description,action, signer
+def create_category_address(namespace_prefix, category_id):
+    return namespace_prefix + \
+        hashlib.sha512(category_id.encode('utf-8')).hexdigest()[:64]
+
 
 def _display(msg):
     n = msg.count("\n")
@@ -142,4 +131,3 @@ def _display(msg):
     for line in msg:
         LOGGER.debug("+ " + line.center(length) + " +")
     LOGGER.debug("+" + (length + 2) * "-" + "+")
-        

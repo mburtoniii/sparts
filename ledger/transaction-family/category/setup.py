@@ -1,6 +1,5 @@
-# ------------------------------------------------------------------------------
 # Copyright 2017 Intel Corporation
-# Copyright 2017 Wind River Systems
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -19,23 +18,14 @@ from __future__ import print_function
 import os
 import subprocess
 
-
 from setuptools import setup, find_packages
-
-if os.path.exists("/etc/default"):
-    data_files.append(('/etc/default', ['packaging/systemd/sawtooth-category-tp-python']))
-
-if os.path.exists("/lib/systemd/system"):
-    data_files.append(('/lib/systemd/system',
-                       ['packaging/systemd/sawtooth-category-tp-python.service']))
 
 
 setup(name='sawtooth-category',
-      version=subprocess.check_output(
-          ['../../../bin/get_version']).decode('utf-8').strip(),
-      description='Category transaction family for sparts project',
-      author='Wind River',
-      url='',
+      version='1.0.0',
+      description='Sparts Category Example',
+      author='Wind River System',
+      url='https://github.com/Wind-River/software-parts-ledger',
       packages=find_packages(),
       install_requires=[
           'aiohttp',
@@ -45,11 +35,9 @@ setup(name='sawtooth-category',
           'sawtooth-signing',
           'PyYAML',
           ],
-      data_files=data_files,
       entry_points={
           'console_scripts': [
               'category = sawtooth_category.category_cli:main_wrapper',
-              'category-tp-python = sawtooth_category.processor.main:main',
+              'category_tp_python = sawtooth_category.processor.main:main',
           ]
       })
-

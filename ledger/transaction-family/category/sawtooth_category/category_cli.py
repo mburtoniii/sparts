@@ -1,5 +1,5 @@
 # Copyright 2017 Intel Corporation
-# Copyright 2017 Wind River Systems
+# Copyright 2017 Wind River
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,12 +30,36 @@ from colorlog import ColoredFormatter
 
 import sawtooth_signing.secp256k1_signer as signing
 
-from sawtooth_category.category_client import CategoryClient
-from sawtooth_category.category_exceptions import CategoryException
+from sawtooth_category.category_batch import CategoryBatch
+from sawtooth_category.exceptions import CategoryException
 
 
 DISTRIBUTION_NAME = 'sawtooth-category'
 
+def add_create_parser(subparsers, parent_parser):
+    parser = subparsers.add_parser('create', parents=[parent_parser])
+
+    parser.add_argument(
+        'category_id',
+        type=str,
+        help='category identifier')
+    
+    parser.add_argument(
+        'category_name',
+        type=str,
+        help='Provide category name')
+    
+    
+    parser.add_argument(
+        'description',
+        type=str,
+        help='provide description')
+
+    parser.add_argument(
+        '--disable-client-validation',
+        action='store_true',
+        default=False,
+        help='disable client validation')
 
 def create_console_handler(verbose_level):
     clog = logging.StreamHandler()
@@ -70,33 +94,6 @@ def setup_loggers(verbose_level):
     logger.addHandler(create_console_handler(verbose_level))
 
 
-def add_create_category_parser(subparsers, parent_parser):
-    
-    parser = subparsers.add_parser('create', parents=[parent_parser])
-
-    parser.add_argument(
-        'category_id',
-        type=str,
-        help='an identifier for category')
-    
-    parser.add_argument(
-        'category_name',
-        type=str,
-        help='Provide category name')
-    
-    parser.add_argument(
-        'description',
-        type=str,
-        help='provide description')
-    
-
-    parser.add_argument(
-        '--disable-client-validation',
-        action='store_true',
-        default=False,
-        help='disable client validation')
-
-
 def add_init_parser(subparsers, parent_parser):
     parser = subparsers.add_parser('init', parents=[parent_parser])
 
@@ -111,17 +108,18 @@ def add_init_parser(subparsers, parent_parser):
         help='the url of the REST API')
 
 
+
 def add_list_category_parser(subparsers, parent_parser):
     subparsers.add_parser('list-category', parents=[parent_parser])
 
 
-def add_show_category_parser(subparsers, parent_parser):
-    parser = subparsers.add_parser('show-category', parents=[parent_parser])
+def add_retrieve_category_parser(subparsers, parent_parser):
+    parser = subparsers.add_parser('retrieve', parents=[parent_parser])
 
     parser.add_argument(
         'category_id',
         type=str,
-        help='the identifier for the category')
+        help='an identifier for the category')
 
 
 
@@ -156,7 +154,7 @@ def create_parent_parser(prog_name):
 
     return parent_parser
 
-##Made Changes
+
 def create_parser(prog_name):
     parent_parser = create_parent_parser(prog_name)
 
@@ -166,10 +164,10 @@ def create_parser(prog_name):
 
     subparsers = parser.add_subparsers(title='subcommands', dest='command')
 
-    add_create_category_parser(subparsers, parent_parser)
+    add_create_parser(subparsers, parent_parser)
     add_init_parser(subparsers, parent_parser)
     add_list_category_parser(subparsers, parent_parser)
-    add_show_category_parser(subparsers, parent_parser)
+    add_retrieve_category_parser(subparsers, parent_parser)
 
     return parser
 
@@ -218,42 +216,43 @@ def do_init(args, config):
             raise CategoryException("IOError: {}".format(str(ioe)))
 
 
-
-
-def do_category_list(args, config):
+def do_list_category(args, config):
     url = config.get('DEFAULT', 'url')
     key_file = config.get('DEFAULT', 'key_file')
     auth_user, auth_password = _get_auth_info(args)
 
-    client = CategoryClient(base_url=url, keyfile=key_file)
-    category_list = client.list(auth_user=auth_user,
+    client = CategoryBatch(base_url=url, keyfile=key_file)
+
+    category_list = client.list_category(auth_user=auth_user,
                                  auth_password=auth_password)
 
     if category_list is not None:
-        print(category_list)
+        print (category_list)
     else:
         raise CategoryException("Could not retrieve category listing.")
 
 
-def do_category_show(args, config):
+def do_retrieve_category(args, config):
     category_id = args.category_id
 
     url = config.get('DEFAULT', 'url')
     key_file = config.get('DEFAULT', 'key_file')
     auth_user, auth_password = _get_auth_info(args)
 
-    client = CategoryClient(base_url=url, keyfile=key_file)
+    client = CategoryBatch(base_url=url, keyfile=key_file)
 
-    result = client.show(category_id, auth_user=auth_user, auth_password=auth_password)
+    data = client.retreive_category(category_id, auth_user=auth_user, auth_password=auth_password)
 
-    if result is not None:
-        print(result)
+    if data is not None:
+
+        print(data)
+
     else:
-        raise CategoryException("category not found {}".format(category_id))
+        raise CategoryException("Category not found: {}".format(category_id))
 
 
 
-def do_category_create(args, config):
+def do_create_category(args, config):
     category_id = args.category_id
     category_name = args.category_name
     description = args.description
@@ -262,21 +261,21 @@ def do_category_create(args, config):
     key_file = config.get('DEFAULT', 'key_file')
     auth_user, auth_password = _get_auth_info(args)
 
-    client = CategoryClient(base_url=url, keyfile=key_file)
+    client = CategoryBatch(base_url=url, keyfile=key_file)
 
-    response = client.create(
-            category_id,category_name,description, auth_user=auth_user,
+    response = client.create_category(
+            category_id,category_name,description,
+            auth_user=auth_user,
             auth_password=auth_password)
-
-    print("Response: {}".format(response))
-
+    
+    print_msg(response)
 
 
 def load_config():
     home = os.path.expanduser("~")
     real_user = getpass.getuser()
 
-    config_file = os.path.join(home, ".sawtooth", "Category.cfg")
+    config_file = os.path.join(home, ".sawtooth", "category.cfg")
     key_dir = os.path.join(home, ".sawtooth", "keys")
 
     config = configparser.ConfigParser()
@@ -289,11 +288,17 @@ def load_config():
 
     return config
 
-
+def print_msg(response):
+    if "batch_status?id" in response:
+        print ("{\"status\":\"success\"}")
+    else:
+        print ("{\"status\":\"exception\"}")
+        
+        
 def save_config(config):
     home = os.path.expanduser("~")
 
-    config_file = os.path.join(home, ".sawtooth", "Category.cfg")
+    config_file = os.path.join(home, ".sawtooth", "category.cfg")
     if not os.path.exists(os.path.dirname(config_file)):
         os.makedirs(os.path.dirname(config_file))
 
@@ -330,22 +335,29 @@ def main(prog_name=os.path.basename(sys.argv[0]), args=None):
     config = load_config()
 
     if args.command == 'create':
-        do_category_create(args, config)
+        do_create_category(args, config)
     elif args.command == 'init':
         do_init(args, config)
     elif args.command == 'list-category':
-        do_category_list(args, config)
-    elif args.command == 'show-category':
-        do_category_show(args, config)
- 
+        do_list_category(args, config)
+    elif args.command == 'retrieve':
+        do_retrieve_category(args, config)
     else:
         raise CategoryException("invalid command: {}".format(args.command))
+
 
 def main_wrapper():
     try:
         main()
     except CategoryException as err:
-        print("Error: {}".format(err), file=sys.stderr)
+        newstr = str(err)
+        if '404' in newstr:
+            print("{\"status\":\"404 Not Found\"}")
+        else:
+            error_message = "{\"error\":\"failed\",\"error_message\":\""
+            closing_str = "\"}"
+            print (error_message+newstr+closing_str)
+            
         sys.exit(1)
     except KeyboardInterrupt:
         pass
