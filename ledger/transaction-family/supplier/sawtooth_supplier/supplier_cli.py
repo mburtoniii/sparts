@@ -1,5 +1,5 @@
 # Copyright 2017 Intel Corporation
-# Copyright 2017 Wind River Systems
+# Copyright 2017 Wind River
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import argparse
 import configparser
 import getpass
 import logging
+import json
 import os
 import traceback
 import sys
@@ -30,8 +31,8 @@ from colorlog import ColoredFormatter
 
 import sawtooth_signing.secp256k1_signer as signing
 
-from sawtooth_supplier.supplier_client import SupplierClient
-from sawtooth_supplier.supplier_exceptions import SupplierException
+from sawtooth_supplier.supplier_batch import SupplierBatch
+from sawtooth_supplier.exceptions import SupplierException
 
 
 DISTRIBUTION_NAME = 'sawtooth-supplier'
@@ -70,14 +71,13 @@ def setup_loggers(verbose_level):
     logger.addHandler(create_console_handler(verbose_level))
 
 
-def add_create_supplier_parser(subparsers, parent_parser):
-    
+def add_create_parser(subparsers, parent_parser):
     parser = subparsers.add_parser('create', parents=[parent_parser])
 
     parser.add_argument(
         'supplier_id',
         type=str,
-        help='an identifier for supplier')
+        help='an identifier for the supplier')
     
     parser.add_argument(
         'short_id',
@@ -98,19 +98,13 @@ def add_create_supplier_parser(subparsers, parent_parser):
         'supplier_url',
         type=str,
         help='provide URL')
-    
- 
+
     parser.add_argument(
         '--disable-client-validation',
         action='store_true',
         default=False,
         help='disable client validation')
 
-    parser.add_argument(
-        '--wait',
-        action='store_true',
-        default=False,
-        help='wait for this commit before exiting')
 
 def add_init_parser(subparsers, parent_parser):
     parser = subparsers.add_parser('init', parents=[parent_parser])
@@ -126,22 +120,22 @@ def add_init_parser(subparsers, parent_parser):
         help='the url of the REST API')
 
 
+
 def add_list_supplier_parser(subparsers, parent_parser):
     subparsers.add_parser('list-supplier', parents=[parent_parser])
 
 
-def add_show_supplier_parser(subparsers, parent_parser):
-    parser = subparsers.add_parser('show-supplier', parents=[parent_parser])
+def add_retrieve_parser(subparsers, parent_parser):
+    parser = subparsers.add_parser('retrieve', parents=[parent_parser])
 
     parser.add_argument(
         'supplier_id',
         type=str,
-        help='the identifier for the supplier')
+        help='an identifier for the supplier')
+    
+    
 
-
-
-# Receives arguments for AddPart action
-def add_relation_with_parts_parser(subparsers, parent_parser):
+def add_part_parser(subparsers, parent_parser):
     parser = subparsers.add_parser('AddPart', parents=[parent_parser])
     
     parser.add_argument(
@@ -152,9 +146,8 @@ def add_relation_with_parts_parser(subparsers, parent_parser):
     parser.add_argument(
         'part_id',
         type=str,
-        help='the UUID identifier for part')
+        help='the UUID identifier for Part')
     
-
 
 
 
@@ -199,12 +192,12 @@ def create_parser(prog_name):
 
     subparsers = parser.add_subparsers(title='subcommands', dest='command')
 
-    add_create_supplier_parser(subparsers, parent_parser)
-    add_init_parser(subparsers, parent_parser)
+    add_create_parser(subparsers, parent_parser)
+    add_init_parser(subparsers, parent_parser)   
     add_list_supplier_parser(subparsers, parent_parser)
-    add_show_supplier_parser(subparsers, parent_parser)
-    add_relation_with_parts_parser(subparsers, parent_parser)
-    
+    add_retrieve_parser(subparsers, parent_parser)
+    add_part_parser(subparsers, parent_parser)
+
     return parser
 
 
@@ -254,56 +247,82 @@ def do_init(args, config):
 
 
 
-def do_supplier_list(args, config):
+def do_list_supplier(args, config):
     url = config.get('DEFAULT', 'url')
     key_file = config.get('DEFAULT', 'key_file')
     auth_user, auth_password = _get_auth_info(args)
 
-    client = SupplierClient(base_url=url, keyfile=key_file)
-    supplier_list = client.list(auth_user=auth_user,
+    client = SupplierBatch(base_url=url, keyfile=key_file)
+
+    result = client.list_supplier(auth_user=auth_user,
                                  auth_password=auth_password)
 
-    if supplier_list is not None:
-        print(supplier_list)
+    if result is not None:
+        print (result)
     else:
         raise SupplierException("Could not retrieve supplier listing.")
 
 
-def do_supplier_show(args, config):
+def do_retrieve(args, config):
     supplier_id = args.supplier_id
 
     url = config.get('DEFAULT', 'url')
     key_file = config.get('DEFAULT', 'key_file')
     auth_user, auth_password = _get_auth_info(args)
 
-    client = SupplierClient(base_url=url, keyfile=key_file)
+    client = SupplierBatch(base_url=url, keyfile=key_file)
 
-    result = client.show(supplier_id, auth_user=auth_user, auth_password=auth_password)
+    result = client.retrieve_supplier(supplier_id, auth_user=auth_user, auth_password=auth_password).decode()
 
     if result is not None:
+        result = filter_output(result)
         print(result)
+
     else:
-        raise SupplierException("supplier not found {}".format(supplier_id))
+        raise SupplierException("Supplier not found: {}".format(supplier_id))
+
+def removekey(d,key):
+    r = dict(d)
+    del r[key]
+    return r
+
+def print_msg(response):
+    if "batch_status?id" in response:
+        print ("{\"status\":\"success\"}")
+    else:
+        print ("{\"status\":\"exception\"}")
+
+def filter_output(result):
+    
+    mylist = result.split(',',1)
+    newstr = mylist[1]
+    jsonStr = newstr.replace('supplier_id','uuid').replace('supplier_name','name').replace('supplier_url','url')
+    data = json.loads(jsonStr)
+    data = removekey(data,'parts')
+    jsonStr = json.dumps(data)
+    return jsonStr
 
 
-
-def do_supplier_create(args, config):
+def do_create(args, config):
     supplier_id = args.supplier_id
     short_id = args.short_id
     supplier_name = args.supplier_name
     passwd = args.passwd
     supplier_url = args.supplier_url
-    
+
     url = config.get('DEFAULT', 'url')
     key_file = config.get('DEFAULT', 'key_file')
     auth_user, auth_password = _get_auth_info(args)
 
-    client = SupplierClient(base_url=url, keyfile=key_file)
-    response = client.create(
-            supplier_id,short_id,supplier_name,passwd,supplier_url, auth_user=auth_user,
-            auth_password=auth_password)
+    client = SupplierBatch(base_url=url, keyfile=key_file)
 
-    print("Response: {}".format(response))
+   
+    response = client.create(
+            supplier_id,short_id,supplier_name,passwd,supplier_url,
+            auth_user=auth_user,
+            auth_password=auth_password)
+    
+    print_msg(response)
 
 
 
@@ -328,7 +347,7 @@ def load_config():
 def save_config(config):
     home = os.path.expanduser("~")
 
-    config_file = os.path.join(home, ".sawtooth", "Supplier.cfg")
+    config_file = os.path.join(home, ".sawtooth", "supplier.cfg")
     if not os.path.exists(os.path.dirname(config_file)):
         os.makedirs(os.path.dirname(config_file))
 
@@ -348,17 +367,6 @@ def _get_auth_info(args):
 
     return auth_user, auth_password
 
-def do_add_part(args, config):
-    supplier_id = args.supplier_id
-    part_id = args.part_id
-   
-    url = config.get('DEFAULT', 'url')
-    key_file = config.get('DEFAULT', 'key_file')
-
-    client = SupplierClient(base_url=url,
-                      keyfile=key_file)
-    response = client.AddPart(supplier_id,part_id)
-    print("Response: {}".format(response))
 
 def main(prog_name=os.path.basename(sys.argv[0]), args=None):
     if args is None:
@@ -376,24 +384,44 @@ def main(prog_name=os.path.basename(sys.argv[0]), args=None):
     config = load_config()
 
     if args.command == 'create':
-        do_supplier_create(args, config)
+        do_create(args, config)
     elif args.command == 'init':
         do_init(args, config)
     elif args.command == 'list-supplier':
-        do_supplier_list(args, config)
-    elif args.command == 'show-supplier':
-        do_supplier_show(args, config)
+        do_list_supplier(args, config)
+    elif args.command == 'retrieve':
+        do_retrieve(args, config)
     elif args.command == 'AddPart':
-        do_add_part(args, config)   
- 
+        do_addpart(args, config) 
+
     else:
         raise SupplierException("invalid command: {}".format(args.command))
+
+def do_addpart(args, config):
+    supplier_id = args.supplier_id
+    part_id = args.part_id
+   
+    url = config.get('DEFAULT', 'url')
+    key_file = config.get('DEFAULT', 'key_file')
+
+    client = SupplierBatch(base_url=url,
+                      keyfile=key_file)
+    response = client.add_part(supplier_id,part_id)
+    print("Response: {}".format(response))
+
 
 def main_wrapper():
     try:
         main()
     except SupplierException as err:
-        print("Error: {}".format(err), file=sys.stderr)
+        newstr = str(err)
+        if '404' in newstr:
+            print("{\"status\":\"404 Not Found\"}")
+        else:
+            error_message = "{\"error\":\"failed\",\"error_message\":\""
+            closing_str = "\"}"
+            print (error_message+newstr+closing_str)
+            
         sys.exit(1)
     except KeyboardInterrupt:
         pass

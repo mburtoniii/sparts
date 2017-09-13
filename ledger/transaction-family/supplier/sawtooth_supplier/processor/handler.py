@@ -1,5 +1,5 @@
 # Copyright 2016 Intel Corporation
-# Copyright 2017 Wind River Systems
+# Copyright 2017 Wind River
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ import hashlib
 import logging
 import json
 from collections import OrderedDict
-
 from sawtooth_sdk.processor.state import StateEntry
 from sawtooth_sdk.processor.exceptions import InvalidTransaction
 from sawtooth_sdk.processor.exceptions import InternalError
@@ -46,31 +45,26 @@ class SupplierTransactionHandler:
     @property
     def namespaces(self):
         return [self._namespace_prefix]
-    
- 
+
     def apply(self, transaction, state_store):
 
-        # Deserialize the transaction and verify it is valid
-        supplier_id,short_id,supplier_name,passwd,supplier_url,action,part_id,signer = extract_transaction(transaction)
+        # 1. Deserialize the transaction and verify it is valid
+        header = TransactionHeader()
+        header.ParseFromString(transaction.header)
 
-      
-        if  supplier_id  == "":
-            raise InvalidTransaction("supplier Data is required")
+    
+        try:
+            # The payload is csv utf-8 encoded string
+            supplier_id,short_id,supplier_name,passwd,supplier_url,action,part_id = transaction.payload.decode().split(",")
+        except ValueError:
+            raise InvalidTransaction("Invalid payload serialization")
 
-        if action == "":
-            raise InvalidTransaction("Action is required")
-
-        # Checks to see if the action is valid or not
-        if action not in ("create","list-supplier","show-supplier","AddPart"):
-            raise InvalidTransaction("Invalid Action '{}'".format(action))
-
-        data_address = self._namespace_prefix \
-            + hashlib.sha512(supplier_id.encode("utf-8")).hexdigest()
-
-        # Retrieve data from address
+        validate_transaction(supplier_id,short_id,supplier_name,passwd,supplier_url,action,part_id)
+               
+        data_address = make_supplier_address(self._namespace_prefix,supplier_id)
+          
         state_entries = state_store.get([data_address])
-        
-        # Checks to see if the list is not empty
+      
         if len(state_entries) != 0:
             try:
                    
@@ -84,7 +78,7 @@ class SupplierTransactionHandler:
         else:
             stored_supplier_id = stored_supplier = None
             
-        # Validate the envelope data
+      
         if action == "create" and stored_supplier_id is not None:
             raise InvalidTransaction("Invalid Action-supplier already exists.")
                
@@ -94,53 +88,55 @@ class SupplierTransactionHandler:
             stored_supplier_id = supplier_id
             stored_supplier = supplier
             _display("Created a supplier.")
-            
+        
+        
+           
         if action == "AddPart":
             if part_id not in stored_supplier_str:
                 supplier = add_part(part_id,stored_supplier)
-                stored_supplier = supplier
-   
-        stored_cat_str = json.dumps(stored_supplier)
+                stored_supplier = supplier  
+            
+        # Put data back in state storage
+        stored_supp_str = json.dumps(stored_supplier)
         addresses = state_store.set([
             StateEntry(
                 address=data_address,
-                data=",".join([stored_supplier_id, stored_cat_str]).encode()
+                data=",".join([stored_supplier_id, stored_supp_str]).encode()
             )
         ])
-        
-        if len(addresses) < 1:
-            raise InternalError("State Error")
-        
+        return addresses
 
 
-def add_part(uuid,parent_supplier):
-    
-    sub_part_list = parent_supplier['parts']
-    sub_part_dic = {'part_id': uuid}
-    sub_part_list.append(sub_part_dic)
-    parent_supplier['parts'] = sub_part_list
+def add_part(uuid,parent_supplier):    
+    supplier_list = parent_supplier['parts']
+    supplier_dic = {'part_id': uuid}
+    supplier_list.append(supplier_dic)
+    parent_supplier['parts'] = supplier_list
     return parent_supplier     
 
-# Create an envelope payload record
+
 def create_supplier(supplier_id,short_id,supplier_name,passwd,supplier_url):
-    supplierD = OrderedDict()
     supplierD = {'supplier_id': supplier_id,'short_id':short_id,'supplier_name': supplier_name,'passwd': passwd,'supplier_url': supplier_url,'parts':[]}
     return supplierD 
+         
 
 
-def extract_transaction(transaction):
+def validate_transaction( supplier_id,short_id,supplier_name,passwd,supplier_url,action,part_id):
+    if not supplier_id:
+        raise InvalidTransaction('Supplier ID is required') 
+    if not action:
+        raise InvalidTransaction('Action is required')
+
+    if action not in ('create',"AddPart"):
+        raise InvalidTransaction('Invalid action: {}'.format(action))
+
     
-    header = TransactionHeader()
-    header.ParseFromString(transaction.header)
-    # The transaction signer is the player
-    signer = header.signer_pubkey
+def make_supplier_address(namespace_prefix, supplier_id):
+    return namespace_prefix + \
+        hashlib.sha512(supplier_id.encode('utf-8')).hexdigest()[:64]
 
-    try:
-        supplier_id,short_id,supplier_name,passwd,supplier_url,action,part_id = transaction.payload.decode().split(",")
-    except ValueError:
-        raise InvalidTransaction("Invalid payload serialization")
-    
-    return supplier_id,short_id,supplier_name,passwd,supplier_url,action,part_id, signer
+
+
 
 def _display(msg):
     n = msg.count("\n")
@@ -156,4 +152,3 @@ def _display(msg):
     for line in msg:
         LOGGER.debug("+ " + line.center(length) + " +")
     LOGGER.debug("+" + (length + 2) * "-" + "+")
-        

@@ -1,6 +1,5 @@
-# Copyright 2016 Intel Corporation
-# Copyright 2017 Wind River Systems
-#
+# Copyright 2017 Intel Corporation
+# 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,10 +13,10 @@
 # limitations under the License.
 # ------------------------------------------------------------------------------
 
-
 import hashlib
 import sys
 import argparse
+import pkg_resources
 
 from sawtooth_sdk.processor.core import TransactionProcessor
 from sawtooth_sdk.client.config import get_log_dir
@@ -27,12 +26,13 @@ from sawtooth_sdk.client.log import log_configuration
 from sawtooth_supplier.processor.handler import SupplierTransactionHandler
 
 
+DISTRIBUTION_NAME = 'sawtooth-supplier'
+
 
 def parse_args(args):
-    
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter)
-    
+
     parser.add_argument('endpoint',
                         nargs='?',
                         default='tcp://localhost:4004',
@@ -41,14 +41,35 @@ def parse_args(args):
                         action='count',
                         default=0,
                         help='Increase output sent to stderr')
+
+    try:
+        version = pkg_resources.get_distribution(DISTRIBUTION_NAME).version
+    except pkg_resources.DistributionNotFound:
+        version = 'UNKNOWN'
+
+    parser.add_argument(
+        '-V', '--version',
+        action='version',
+        version=(DISTRIBUTION_NAME + ' (Hyperledger Sawtooth) version {}')
+        .format(version),
+        help='print version information')
+
     return parser.parse_args(args)
 
-def main(args=sys.argv[1:]):
+
+def main(args=None):
+    if args is None:
+        args = sys.argv[1:]
     opts = parse_args(args)
     processor = None
     try:
         processor = TransactionProcessor(url=opts.endpoint)
         log_config = get_log_config(filename="supplier_log_config.toml")
+
+        
+        if log_config is None:
+            log_config = get_log_config(filename="supplier_log_config.yaml")
+
         if log_config is not None:
             log_configuration(log_config=log_config)
         else:
@@ -60,7 +81,7 @@ def main(args=sys.argv[1:]):
 
         init_console_logging(verbose_level=opts.verbose)
 
-      
+        
         supplier_prefix = hashlib.sha512('supplier'.encode("utf-8")).hexdigest()[0:6]
         handler = SupplierTransactionHandler(namespace_prefix=supplier_prefix)
 
@@ -69,7 +90,7 @@ def main(args=sys.argv[1:]):
         processor.start()
     except KeyboardInterrupt:
         pass
-    except Exception as e:
+    except Exception as e:  
         print("Error: {}".format(e))
     finally:
         if processor is not None:
