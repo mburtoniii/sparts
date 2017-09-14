@@ -1,4 +1,4 @@
-## Utilizing a Blockchain to Establish Trust with Open Source Used Across the SupplyChain
+## Utilizing a Blockchain to Establish Trust with Open Source Across the SupplyChain
 
 ## Introduction
 
