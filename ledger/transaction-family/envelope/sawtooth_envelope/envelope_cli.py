@@ -25,6 +25,7 @@ import sys
 import shutil
 import pkg_resources
 import json
+import re
 
 from colorlog import ColoredFormatter
 
@@ -273,11 +274,13 @@ def do_list_envelope(args, config):
 
     result = client.list_artifact(auth_user=auth_user,
                                  auth_password=auth_password)
-
-    if result is not None:
-        print (result)
+    
+    if (result is not None):
+        output = refine_output_envelope(str(result))
+        output = refine_output(output)  
+        print(output)
     else:
-        raise EnvelopeException("Could not retrieve artifact listing.")
+         raise EnvelopeException("Could not retrieve artifact listing.")
 
 def removekey(d,key):
     r = dict(d)
@@ -294,6 +297,37 @@ def filter_output(result):
     data = removekey(data,'sub_artifact')
     jsonStr = json.dumps(data)
     return jsonStr
+
+
+def refine_output_envelope(inputstr):
+    inputstr = inputstr[1:-1]
+    output = re.sub(r'\[.*?\]', '',inputstr)
+    output = "["+output+"]"  
+    return output
+
+def amend_envelope_fields(inputstr):
+        output = inputstr.replace("\\","").replace("artifact_name","filename").replace("artifact_id","uuid").replace("artifact_checksum","checksum").replace("artifact_type","content_type")
+        return output
+
+        
+def refine_output(inputstr):
+                outputstr = ''
+                subartifactstr = "\"sub_artifact\": ,"
+                if subartifactstr in inputstr:
+                    outputstr=inputstr.replace(subartifactstr,"").replace('b\'','').replace('}\'','}').replace("}]","")
+                else:
+                    outputstr = inputstr.replace(", \"sub_artifact\": ,").replace('b\'','').replace('}\'','}').replace("}]","")
+                artlist = outputstr.split("},")
+                artifactlist = []
+                for line in artlist:
+                        record = "{"+line.split(",{",1)[-1]+"}"
+                        artifactlist.append(record)
+                joutput = str(artifactlist)
+                joutput = joutput.replace("'{","{").replace("}'","}").replace(", { {",", {")
+                joutput = amend_envelope_fields(joutput)
+                return joutput
+
+
 
 def do_retrieve_envelope(args, config):
     artifact_id = args.artifact_id
