@@ -227,7 +227,8 @@ def do_list_category(args, config):
                                  auth_password=auth_password)
 
     if category_list is not None:
-        print (category_list)
+        output = refine_output(str(category_list))
+        print (output)
     else:
         raise CategoryException("Could not retrieve category listing.")
 
@@ -244,9 +245,8 @@ def do_retrieve_category(args, config):
     data = client.retreive_category(category_id, auth_user=auth_user, auth_password=auth_password)
 
     if data is not None:
-
-        print(data)
-
+        output = filter_output(str(data))
+        print (output)
     else:
         raise CategoryException("Category not found: {}".format(category_id))
 
@@ -270,6 +270,30 @@ def do_create_category(args, config):
     
     print_msg(response)
 
+
+def filter_output(result):    
+    catlist = result.split(',',1)
+    output = catlist[1]
+    output = output.replace("category_name","name").replace("category_id","uuid").replace("\\","")
+    output = output[:-1]
+    return output
+
+def refine_output(inputstr):
+    outputstr=inputstr.replace('b\'','').replace('}\'','}').replace("}]","")
+    catlist = outputstr.split("},")
+    categorylist = []
+    for line in catlist:
+        record = "{"+line.split(",{",1)[-1]+"}"
+        categorylist.append(record)
+    joutput = str(categorylist)
+    joutput = joutput.replace("'{","{").replace("}'","}").replace(", { {",", {")
+    joutput = amend_category_fields(joutput)
+    return joutput
+
+
+def amend_category_fields(inputstr):
+    output = inputstr.replace("category_name","name").replace("category_id","uuid").replace("\\","")
+    return output
 
 def load_config():
     home = os.path.expanduser("~")

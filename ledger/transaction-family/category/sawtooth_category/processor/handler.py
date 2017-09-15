@@ -1,5 +1,6 @@
 # Copyright 2016 Intel Corporation
-#
+# Copyright 2017 Wind River
+
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -87,13 +88,13 @@ class CategoryTransactionHandler:
                 
         # Insert data back
         stored_supp_str = json.dumps(stored_category)
-        address = state_store.set([
+        addresses = state_store.set([
             StateEntry(
                 address=data_address,
                 data=",".join([stored_category_id, stored_supp_str]).encode()
             )
         ])
-        return address
+        return addresses
         
         
 def create_category_payload(category_id,category_name,description):
