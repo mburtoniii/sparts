@@ -26,6 +26,7 @@ import traceback
 import sys
 import shutil
 import pkg_resources
+import re
 
 from colorlog import ColoredFormatter
 
@@ -258,10 +259,40 @@ def do_list_supplier(args, config):
                                  auth_password=auth_password)
 
     if result is not None:
-        print (result)
+        out = refine_output_supplier(str(result))
+        output = refine_output(out)
+        print(output)
     else:
         raise SupplierException("Could not retrieve supplier listing.")
 
+		
+		
+
+def refine_output_supplier(inputstr):
+    inputstr = inputstr[1:-1]
+    output = re.sub(r'\[.*?\]', '',inputstr)
+    output = "["+output+"]"  
+    return output
+
+def amend_supplier_fields(inputstr):
+        output = inputstr.replace("\\","").replace('supplier_id','uuid').replace('supplier_name','name').replace('supplier_url','url')
+        return output
+
+        
+def refine_output(inputstr):
+    
+                outputstr = ''
+                subpartstr = "\"parts\": ,"
+                outputstr=inputstr.replace(subpartstr,"").replace('b\'','').replace('}\'','}').replace(", \"parts\": ","")
+                slist = outputstr.split("},")
+                supplierlist = []
+                for line in slist:
+                        record = "{"+line.split(",{",1)[-1]+"}"
+                        supplierlist.append(record)
+                joutput = str(supplierlist)
+                joutput = joutput.replace("'{","{").replace("}'","}").replace(", { {",", {").replace("}]}]","}]")
+                joutput = amend_supplier_fields(joutput)
+                return joutput
 
 def do_retrieve(args, config):
     supplier_id = args.supplier_id
@@ -294,9 +325,9 @@ def print_msg(response):
 
 def filter_output(result):
     
-    mylist = result.split(',',1)
-    newstr = mylist[1]
-    jsonStr = newstr.replace('supplier_id','uuid').replace('supplier_name','name').replace('supplier_url','url')
+    supplierlist = result.split(',',1)
+    suppstr = supplierlist[1]
+    jsonStr = suppstr.replace('supplier_id','uuid').replace('supplier_name','name').replace('supplier_url','url')
     data = json.loads(jsonStr)
     data = removekey(data,'parts')
     jsonStr = json.dumps(data)
