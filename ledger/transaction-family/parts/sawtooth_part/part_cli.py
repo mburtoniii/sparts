@@ -26,6 +26,7 @@ import sys
 import shutil
 import pkg_resources
 import json
+import re
 
 from colorlog import ColoredFormatter
 
@@ -301,7 +302,8 @@ def do_list_part(args, config):
                                  auth_password=auth_password)
 
     if result is not None:
-        print (result)
+        output = refine_output(str(result))
+        print(output)
     else:
         raise PartException("Could not retrieve part listing.")
 
@@ -319,7 +321,7 @@ def do_retrieve(args, config):
     result = client.retrieve_part(pt_id, auth_user=auth_user, auth_password=auth_password).decode()
 
     if result is not None:
-        result = filter_output(result)
+        result = filter_output(str(result))
         print(result)
      
     else:
@@ -327,17 +329,46 @@ def do_retrieve(args, config):
 
 
 
-def filter_output(result):
+def filter_output(inputstr):
     
-    mylist = result.split(',',1)
-    newstr = mylist[1]
-    jsonStr = newstr.replace('pt_id','uuid').replace('pt_name','name')
-    data = json.loads(jsonStr)
-    jsonStr = json.dumps(data)
-    return jsonStr
+    ptlist = inputstr.split(',',1)
+    ptstr = ptlist[1]
+    jsonstr = ptstr.replace('pt_id','uuid').replace('pt_name','name')
+    data = json.loads(jsonstr)
+    data = removekey(data,'categories')
+    data = removekey(data,'envelopes')
+    data = removekey(data,'suppliers')
+    jsonstr = json.dumps(data)
+    return jsonstr
+
+
+def amend_supplier_fields(inputstr):
+    output = inputstr.replace("\\","").replace('supplier_id','uuid').replace('supplier_name','name').replace('supplier_url','url')
+    return output
+
+        
+def refine_output(inputstr):
+    outputstr = ''
+    catstr = "\"categories\": "
+    supplierstr = "\"suppliers\": "
+    envelopestr = "\"envelopes\": "
+    inputstr = inputstr[1:-1]
+    instr = re.sub(r'\[.*?\]', '',inputstr)
+    outputstr= instr.replace(catstr+",","").replace(", "+catstr,"").replace('b\'','').replace('}\'','}').replace(supplierstr+",","").replace(", "+supplierstr,"")
+    outputstr = outputstr[:-1]
+    slist = outputstr.split("},")
+    supplierlist = []
+    for line in slist:
+        record = "{"+line.split(",{",1)[-1]+"}"
+        supplierlist.append(record)
+    joutput = str(supplierlist)
+    joutput = joutput.replace(envelopestr+",","").replace(", "+envelopestr,"")
+    joutput = joutput.replace("'{","{").replace("}'","}").replace(", { {",", {")
+    joutput = amend_supplier_fields(joutput)
+    return joutput
 
 def do_create(args, config):
-    #make changes
+ 
     pt_id = args.pt_id
     pt_name = args.pt_name
     checksum = args.checksum
@@ -482,6 +513,10 @@ def main(prog_name=os.path.basename(sys.argv[0]), args=None):
     else:
         raise PartException("invalid command: {}".format(args.command))
 
+def removekey(d,key):
+    r = dict(d)
+    del r[key]
+    return r
 
 def main_wrapper():
     try:
