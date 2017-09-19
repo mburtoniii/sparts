@@ -1,4 +1,5 @@
-## Utilizing a Blockchain to Establish Trust with Open Source Across the SupplyChain
+# Software Parts Ledger
+### Utilizing the Blockchain to Establish Trust with Open Source across a SupplyChain
 
 ## Introduction
 
