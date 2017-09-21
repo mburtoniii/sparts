@@ -121,15 +121,13 @@ Create a file `config.py` in `/var/www/sparts/apps/catalog` and paste the follow
     PRODUCTION = False
 
 `BLOCKCHAIN_API` is the hard-coded address of the conductor service.
-`DEFAULT_API_TIMEOUT` is the number of seconds to wait for a response in an API call
-`BYPASS_API_CALSS` is a flag to bypass making API calls for debugging purposes
-`PRODUCTION` is a boolean indicating whether this is the production server
 
-Next open the file `catalog.wsgi`, and modify the "sparts_path" to the directory where the app resides:
+`DEFAULT_API_TIMEOUT` is the number of seconds to wait for a response in an API call.
 
-    sparts_path = "/var/www/sparts/apps/catalog"
+`BYPASS_API_CALSS` is a flag to bypass making API calls for debugging purposes.
 
-Save and close.
+`PRODUCTION` is a boolean indicating whether this is the production server.
+
 
 #### Restart Apache ####
 Restart the webserver for changes to take effect.
