@@ -1,9 +1,0 @@
-DEBUG = False
-UPLOAD_FOLDER = "/home/kkaviani/software-parts-ledger/apps/catalog/upload"
-ARTIFACT_FOLDER = "/home/kkaviani/software-parts-ledger/apps/catalog/artifacts"
-SAMPLE_DATA_FOLDER = "/var/www/sparts/sample-data"
-DATABASE_URI = "postgresql://<username>:<password>@localhost:5432/sparts"
-BLOCKCHAIN_API = "http://147.11.176.31:3075/api/sparts"
-DEFAULT_API_TIMEOUT = 45
-BYPASS_API_CALSS = False
-PRODUCTION = False
