@@ -66,22 +66,20 @@ Apache comes bundled with a 'Hello, World' type app that only shows the user tha
 
 #### Configure Flask ####
 
-Create a file `config.py` in `/var/www/sparts/apps/catalog` and paste the following in it:
+Create a file `config.py` in `/var/www/sparts/apps/blockchain-dash` and paste the following in it:
 
     DEBUG = True
+    APP_PATH = "/var/www/sparts/apps/blockchain-dash"
     BLOCKCHAIN_API = "http://147.11.176.31:3075/api/sparts"
     DEFAULT_API_TIMEOUT = 45
     BYPASS_API_CALLS = False
 
 `BLOCKCHAIN_API` is the hard-coded address of the conductor service.
-`DEFAULT_API_TIMEOUT` is the number of seconds to wait for a response in an API call
-`BYPASS_API_CALSS` is a flag to bypass making API calls for debugging purposes
 
-Next open the file `bcdash.wsgi`, and modify the "bcdash_path" to the directory where the app resides:
+`DEFAULT_API_TIMEOUT` is the number of seconds to wait for a response in an API call.
 
-    bcdash_path = "/var/www/sparts/apps/blockchain-dash"
-    
-Save and close.
+`BYPASS_API_CALSS` is a flag to bypass making API calls for debugging purposes.
+
 
 #### Retart Apache service ####
     $ service apache2 restart
