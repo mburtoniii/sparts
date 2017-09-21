@@ -52,7 +52,7 @@ class SupplierTransactionHandler:
         header = TransactionHeader()
         header.ParseFromString(transaction.header)
 
-    
+        stored_supplier_str = ""
         try:
             # The payload is csv utf-8 encoded string
             supplier_id,short_id,supplier_name,passwd,supplier_url,action,part_id = transaction.payload.decode().split(",")
@@ -64,6 +64,8 @@ class SupplierTransactionHandler:
         data_address = make_supplier_address(self._namespace_prefix,supplier_id)
           
         state_entries = state_store.get([data_address])
+        
+        
       
         if len(state_entries) != 0:
             try:

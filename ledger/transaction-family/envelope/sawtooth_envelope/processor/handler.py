@@ -119,10 +119,10 @@ class EnvelopeTransactionHandler:
         
 def add_artifact(uuid,parent_artifact):
     
-    artifact_list = parent_artifact['artifact']
+    artifact_list = parent_artifact['sub_artifact']
     artifact_dic = {'artifact_id': uuid}
     artifact_list.append(artifact_dic)
-    parent_artifact['artifact'] = artifact_list
+    parent_artifact['sub_artifact'] = artifact_list
     return parent_artifact     
 
 def create_artifact(uuid,short_id,art_name,art_type,art_checksum,path,uri,label,openchain):

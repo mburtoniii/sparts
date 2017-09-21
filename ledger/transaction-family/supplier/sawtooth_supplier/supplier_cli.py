@@ -439,6 +439,7 @@ def do_addpart(args, config):
                       keyfile=key_file)
     response = client.add_part(supplier_id,part_id)
     print("Response: {}".format(response))
+    print_msg(response)
 
 
 def main_wrapper():

@@ -21,9 +21,52 @@ import subprocess
 from setuptools import setup, find_packages
 
 
+def bump_version(version):
+    (major, minor, patch) = version.split('.')
+    patch = str(int(patch) + 1)
+    return ".".join([major, minor, patch])
+
+
+def auto_version(default, strict):
+    output = subprocess.check_output(['git', 'describe', '--dirty'])
+    parts = output.decode('utf-8').strip().split('-', 1)
+    parts[0] = parts[0][1:]  # strip the leading 'v'
+    if len(parts) == 2:
+        parts[0] = bump_version(parts[0])
+    if default != parts[0]:
+        msg = "setup.py and (bumped?) git describe versions differ: {} != {}"\
+            .format(default, parts[0])
+        if strict:
+            print("ERROR: " + msg, file=sys.stderr)
+            sys.exit(1)
+        else:
+            print("WARNING: " + msg, file=sys.stderr)
+            print("WARNING: using setup.py version {}".format(
+                default), file=sys.stderr)
+            parts[0] = default
+
+    if len(parts) == 2:
+        return ".git".join([parts[0], parts[1].replace("-", ".")])
+    else:
+        return parts[0]
+
+
+def version(default):
+    if 'VERSION' in os.environ:
+        if os.environ['VERSION'] == 'AUTO_STRICT':
+            version = auto_version(default, strict=True)
+        elif os.environ['VERSION'] == 'AUTO':
+            version = auto_version(default, strict=False)
+        else:
+            version = os.environ['VERSION']
+    else:
+        version = default + ".dev1"
+    return version
+
+
 
 setup(name='sawtooth-part',
-      version='1.0.0',
+      version=version('1.1.0'),
       description='Sparts Part Example',
       author='Wind River',
       url='https://github.com/Wind-River/software-parts-ledger',
