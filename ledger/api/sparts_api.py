@@ -1,5 +1,4 @@
-# ------------------------------------------------------------------------------
-# copyright 2017 Wind River Systems
+#copyright 2017 Wind River Systems
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -81,7 +80,7 @@ def get_suppliers():
 
 def ret_exception(exception):
         exp = "{\"status\":\"failed\",\"error_message\":\""+str(exception)+"\"}" 
-        return exp 
+        return exp
 
 #Retrieves category record by category id   
 @app.route('/api/sparts/ledger/categories/<string:category_id>', methods=['GET'])
@@ -228,7 +227,7 @@ def add_envelope_to_part():
 		process.wait()
 		output = ''
 		for line in process.stdout:
-			output+line.decode("utf-8").strip()
+			output+=line.decode("utf-8").strip()
 		return output
 	except Exception as e:
 		exp = ret_exception(e) 
@@ -250,7 +249,7 @@ def add_supplier_to_part():
                 add_part_to_supplier(supplier_uuid,uuid)
 
                 for line in process.stdout:
-                        output+line.decode("utf-8").strip()
+                        output+=line.decode("utf-8").strip()
                 return output
         except Exception as e:
                 exp = ret_exception(e) 
@@ -265,7 +264,7 @@ def add_part_to_supplier(uuid,part_uuid):
                 process.wait()
                 output = ''
                 for line in process.stdout:
-                        output+line.decode("utf-8").strip()
+                        output+=line.decode("utf-8").strip()
                 return output
         except Exception as e:
                 exp = ret_exception(e) 
@@ -286,7 +285,7 @@ def add_category_to_part():
                 process.wait()
                 output = ''
                 for line in process.stdout:
-                        output+line.decode("utf-8").strip()
+                        output+=line.decode("utf-8").strip()
                 return output
         except Exception as e:
                 exp = ret_exception(e) 
@@ -380,8 +379,9 @@ def create_artifact():
 				process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
 				process.wait()
 				for line in process.stdout:
-					output+=line.decode("utf-8").strip()
-		return output 
+					output+=line.decode("utf-8").strip()	
+
+		return output
 	except Exception as e:
 		exp = ret_exception(e)
 		return exp
