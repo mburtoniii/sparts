@@ -1,11 +1,35 @@
 *.py[cod]
 __pycache__/
-blockchain-dash/config.py
+*$py.class
 
-## conductor
+# Flask
+instance/
+.webassets-cache
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+## Conductor
 conductor/test/*
-## This file will be automatically create the first time the conductor runs.
-conductor/data/db/conductor_data.db  
-## This file is automatically create when built on windows
+
+## This file will be automatically created the first time the conductor runs.
+conductor/data/db/conductor_data.db
+
+## This file is automatically created when built on windows
 conductor/conductor.exe
 

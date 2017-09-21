@@ -272,7 +272,8 @@ def call_blockchain_api(method, url, data={}):
 
         elif method == "post":
             result = requests.post(request_url, data=json.dumps(data), \
-                headers={'Content-type': 'application/json'}, timeout=app.config["DEFAULT_API_TIMEOUT"])
+                headers={'Content-type': 'application/json'}, \
+                timeout=app.config["DEFAULT_API_TIMEOUT"])
 
         else:
             raise APIError("Bad method passed to function 'call_blockchain_api")
@@ -282,6 +283,9 @@ def call_blockchain_api(method, url, data={}):
 
     except ConnectionError:
         raise APIError("Blockchain ledger service refused connection.")
+
+    except Exception as error:
+        raise APIError("Failed to call blockchain ledger service API. " + str(error))
 
 
     if result.status_code != 200:

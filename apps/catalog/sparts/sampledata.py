@@ -36,7 +36,6 @@ def reset_handler():
     response_data = {}
 
     try:
-
         # clear all the tables
 
         for part in db_session.query(Part).all():
