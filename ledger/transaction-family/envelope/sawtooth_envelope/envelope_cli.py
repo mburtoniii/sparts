@@ -288,47 +288,6 @@ def removekey(d,key):
     return r
 
 
-def filter_output(result):
-    
-    mylist = result.split(',',1)
-    newstr = mylist[1]
-    jsonStr = newstr.replace('artifact_id','uuid').replace('artifact_name','filename').replace('artifact_checksum','checksum').replace('artifact_type','content_type')
-    data = json.loads(jsonStr)
-    data = removekey(data,'sub_artifact')
-    jsonStr = json.dumps(data)
-    return jsonStr
-
-
-def refine_output_envelope(inputstr):
-    inputstr = inputstr[1:-1]
-    output = re.sub(r'\[.*?\]', '',inputstr)
-    output = "["+output+"]"  
-    return output
-
-def amend_envelope_fields(inputstr):
-        output = inputstr.replace("\\","").replace("artifact_name","filename").replace("artifact_id","uuid").replace("artifact_checksum","checksum").replace("artifact_type","content_type")
-        return output
-
-        
-def refine_output(inputstr):
-                outputstr = ''
-                subartifactstr = "\"sub_artifact\": ,"
-                if subartifactstr in inputstr:
-                    outputstr=inputstr.replace(subartifactstr,"").replace('b\'','').replace('}\'','}').replace("}]","")
-                else:
-                    outputstr = inputstr.replace(", \"sub_artifact\": ,").replace('b\'','').replace('}\'','}').replace("}]","")
-                artlist = outputstr.split("},")
-                artifactlist = []
-                for line in artlist:
-                        record = "{"+line.split(",{",1)[-1]+"}"
-                        artifactlist.append(record)
-                joutput = str(artifactlist)
-                joutput = joutput.replace("'{","{").replace("}'","}").replace(", { {",", {")
-                joutput = amend_envelope_fields(joutput)
-                return joutput
-
-
-
 def do_retrieve_envelope(args, config):
     artifact_id = args.artifact_id
 
@@ -375,7 +334,41 @@ def do_create(args, config):
     
     print_msg(response)
 
+def filter_output(result):
+    
+    mylist = result.split(',',1)
+    newstr = mylist[1]
+    jsonStr = newstr.replace('artifact_id','uuid').replace('artifact_name','filename').replace('artifact_checksum','checksum').replace('artifact_type','content_type')
+    data = json.loads(jsonStr)
+    data = removekey(data,'sub_artifact')
+    jsonStr = json.dumps(data)
+    return jsonStr
 
+
+def refine_output_envelope(inputstr):
+    inputstr = inputstr[1:-1]
+    output = re.sub(r'\[.*?\]', '',inputstr)
+    output = "["+output+"]"  
+    return output
+
+def amend_envelope_fields(inputstr):
+        output = inputstr.replace("\\","").replace("artifact_name","filename").replace("artifact_id","uuid").replace("artifact_checksum","checksum").replace("artifact_type","content_type")
+        return output
+
+        
+def refine_output(inputstr):
+                outputstr = ''
+                subartifactstr = "\"sub_artifact\": ,"
+                outputstr=inputstr.replace(subartifactstr,"").replace('b\'','').replace('}\'','}').replace("}]","").replace(", \"sub_artifact\": ","")
+                artlist = outputstr.split("},")
+                artifactlist = []
+                for line in artlist:
+                        record = "{"+line.split(",{",1)[-1]+"}"
+                        artifactlist.append(record)
+                joutput = str(artifactlist)
+                joutput = joutput.replace("'{","{").replace("}'","}").replace(", { {",", {")
+                joutput = amend_envelope_fields(joutput)
+                return joutput
 
 def load_config():
     home = os.path.expanduser("~")
