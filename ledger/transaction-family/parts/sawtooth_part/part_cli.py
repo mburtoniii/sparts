@@ -403,7 +403,8 @@ def add_Category(args, config):
     client = PartBatch(base_url=url,
                       keyfile=key_file)
     response = client.add_category(pt_id,category_id)
-    print("Response: {}".format(response))
+    
+    print_msg(response)
 
 
 def do_add_envelope(args, config):
@@ -416,7 +417,8 @@ def do_add_envelope(args, config):
     client = PartBatch(base_url=url,
                       keyfile=key_file)
     response = client.add_envelope(pt_id,envelope_id)
-    print("Response: {}".format(response))
+    
+    print_msg(response)
 
 
 def print_msg(response):
@@ -436,7 +438,8 @@ def add_Supplier(args, config):
     client = PartBatch(base_url=url,
                       keyfile=key_file)
     response = client.add_supplier(pt_id,supplier_id)
-    print("Response: {}".format(response))
+    
+    print_msg(response)
 
 def load_config():
     home = os.path.expanduser("~")
