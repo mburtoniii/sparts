@@ -438,7 +438,6 @@ def do_addpart(args, config):
     client = SupplierBatch(base_url=url,
                       keyfile=key_file)
     response = client.add_part(supplier_id,part_id)
-    print("Response: {}".format(response))
     print_msg(response)
 
 
