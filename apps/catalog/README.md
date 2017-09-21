@@ -7,11 +7,11 @@
 The following are required packages for Debian-based systems. Open a terminal as root and run the following commands:
 
     $ apt-get update
-    
+
     $ apt install build-essential git ssh python3 python3-pip apache2 libapache2-mod-wsgi-py3 postgresql postgresql-contrib
 
     $ pip3 install --upgrade pip
-    
+
     $ pip3 install flask sqlalchemy psycopg2 requests
 
 ## Start Services ##
@@ -33,15 +33,15 @@ The output will be similar to `9.5 main    5432 down   postgres /var/lib/postgre
 Start by selecting a username and a password for a database account. You should also select a name for the database. As an example, here we choose the username to be `sparts_admin`, password is `mypassword`, and the database is called `sparts_catalog`. Run the following commands to create the database and an admin user.
 
     $ su - postgres
-    
+
     $ createdb sparts_catalog
-    
+
     $ psql sparts_catalog
-    
+
     $ create user sparts_admin with password 'mypassword';
-    
+
     $ grant all privileges on database "sparts_catalog" to sparts_admin;
-    
+
     $ \q
 
 ## Configure the web server ##
@@ -56,7 +56,7 @@ If you require your app to run on a different port than port 80, you should make
 
     Listen 80
     Listen 6000
-    
+
 You may open as many ports as you need based on how many different concurrent apps you need to run via Apache.
 
 #### Create Apache configuration file ####
@@ -86,23 +86,23 @@ In this example, we serve this app on localhost with port 6000. You can choose w
 To enable the above config file, you must make a soft link in `/etc/apache2/sites-enabled` to this file. Run the following:
 
     $ cd /etc/apache2/sites-enabled
-    
+
     $ ln -s ../sites-available/sparts_catalog.conf
-    
+
 #### Disable the default app ####
 Apache comes bundled with a 'Hello, World' type app that only shows the user that Apache is running. We will disable this using the following command:
 
     $ rm /etc/apache2/sites-enabled/000-default.conf
 
 #### Prepare server directories ####
-Now, we create two directories for upload data and artifacts data. Upload directory is where envelopes get copied when the user uploads an envelope. Artifacts folder is used to hold the artifacts after they are extracted from the envelopes. You can choose the path of these directories. Here as an example, we use `/var/www/sparts/apps/catalog/upload` for the upload folder and similarly `/var/www/sparts/apps/catalog/artifacts` for the artifacts directory. We also have to make sure `www-data` is the owner of these directories so that Apache has the permission to write to them. 
+Now, we create two directories for upload data and artifacts data. Upload directory is where envelopes get copied when the user uploads an envelope. Artifacts folder is used to hold the artifacts after they are extracted from the envelopes. You can choose the path of these directories. Here as an example, we use `/var/www/sparts/apps/catalog/upload` for the upload folder and similarly `/var/www/sparts/apps/catalog/artifacts` for the artifacts directory. We also have to make sure `www-data` is the owner of these directories so that Apache has the permission to write to them.
 
     $ mkdir -p /var/www/sparts/apps/catalog/upload
-    
+
     $ mkdir -p /var/www/sparts/apps/catalog/artifacts
-    
+
     $ chown www-data:www-data /var/www/sparts/apps/catalog/artifacts
-    
+
     $ chown www-data:www-data /var/www/sparts/apps/catalog/artifacts
 
 #### Configure Flask ####
@@ -110,6 +110,7 @@ Now, we create two directories for upload data and artifacts data. Upload direct
 Create a file `config.py` in `/var/www/sparts/apps/catalog` and paste the following in it:
 
     DEBUG = False
+    APP_PATH = "/var/www/sparts/apps/catalog"
     UPLOAD_FOLDER = "/var/www/sparts/apps/catalog/upload"
     ARTIFACT_FOLDER = "/var/www/sparts/apps/catalog/artifacts"
     SAMPLE_DATA_FOLDER = "/var/www/sparts/apps/catalog/sample-data"
@@ -127,7 +128,7 @@ Create a file `config.py` in `/var/www/sparts/apps/catalog` and paste the follow
 Next open the file `catalog.wsgi`, and modify the "sparts_path" to the directory where the app resides:
 
     sparts_path = "/var/www/sparts/apps/catalog"
-    
+
 Save and close.
 
 #### Restart Apache ####
@@ -148,7 +149,7 @@ Next we need to create the tables. Run the following commands to do so:
 
 	>>> exit()
 
-At this point, you should be able to browse the app via any browser at http://localhost:6000. 
+At this point, you should be able to browse the app via any browser at http://localhost:6000.
 
 
 ## Populate database and blockchain with sample data (*optional) ##

@@ -14,10 +14,9 @@ OR CONDITIONS OF ANY KIND, either express or implied.
 
 import sys
 
-sparts_path = "/var/www/sparts"
+from config import APP_PATH
 
-if sparts_path not in sys.path:
-    sys.path.append(sparts_path)
+if APP_PATH not in sys.path:
+    sys.path.append(APP_PATH)
 
 from sparts import app as application
-# application.debug = True

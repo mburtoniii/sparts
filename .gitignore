@@ -33,3 +33,6 @@ conductor/data/db/conductor_data.db
 ## This file is automatically created when built on windows
 conductor/conductor.exe
 
+# catalog and dashboard app
+apps/catalog/config.py
+apps/blockchain-dash/config.py
