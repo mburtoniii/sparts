@@ -46,7 +46,7 @@ import sparts.sampledata
 import sparts.api
 from sparts.api import register_app_with_blockchain
 
-if not Base.metadata.tables.keys():.
+if not Base.metadata.tables.keys():
     print("Tables have not been created. Try calling init_db() in database.py")
     sys.exit(1)
 
