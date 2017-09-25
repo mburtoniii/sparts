@@ -12,12 +12,13 @@ under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
 OR CONDITIONS OF ANY KIND, either express or implied.
 """
 
+import os
 import sys
 
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 from config import APP_PATH
 
 if APP_PATH not in sys.path:
     sys.path.append(APP_PATH)
 
 from bcdash import app as application
-# application.debug = True
