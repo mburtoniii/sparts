@@ -56,9 +56,7 @@ def ping_node(node_api_url, timeout=app.config["DEFAULT_API_TIMEOUT"]):
 def get_blockchain_nodes():
     """get a list of nodes running the ledger and their status from the conductor API
     """
-    response = requests.get(API_SERVER + "/ledger_nodes", timeout=app.config["DEFAULT_API_TIMEOUT"])
-
-    print(API_SERVER + "/ledger/nodes")
+    response = requests.get(API_SERVER + "/ledger/nodes", timeout=app.config["DEFAULT_API_TIMEOUT"])
 
     if response.status_code != 200:
         raise APIError("Failed to call the conductor service to get list of blockchain nodes. " \
@@ -72,7 +70,8 @@ def get_blockchain_nodes():
 
     if "status" in nodes and nodes["status"] != "success":
         raise APIError("Failed to call the conductor service to get list of blockchain nodes. " \
-            + "Server returned status '" + nodes["status"] + "'." )
+            + "Server returned status '" + nodes["status"] + "', with following details: " \
+            + str(nodes))
 
     return nodes
 
