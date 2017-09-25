@@ -37,7 +37,7 @@ app.jinja_env.globals['get_resource_as_string'] = get_resource_as_string
 
 # import controllers
 
-from sparts.database import db_session
+from sparts.database import db_session, Base
 import sparts.views
 from sparts.views import render_page, stacktrace
 import sparts.catalog
@@ -46,30 +46,34 @@ import sparts.sampledata
 import sparts.api
 from sparts.api import register_app_with_blockchain
 
+if not Base.metadata.tables.keys():.
+    print("Tables have not been created. Try calling init_db() in database.py")
+    sys.exit(1)
 
-try:
-    register_app_with_blockchain()
-except sparts.exceptions.APIError as error:
-    print("Failed to register app with blockchain. " + str(error))
-except ReadTimeout:
-    print("Failed to register app with blockchain. Conductor service timed out")
-except ConnectionError:
-    print("Failed to register app with blockchain. " \
-        + "The conductor service refused connection or is not running.")
-except Exception as error:
-    print(str(error))
+else:
+    try:
+        register_app_with_blockchain()
+    except sparts.exceptions.APIError as error:
+        print("Failed to register app with blockchain. " + str(error))
+    except ReadTimeout:
+        print("Failed to register app with blockchain. Conductor service timed out")
+    except ConnectionError:
+        print("Failed to register app with blockchain. " \
+            + "The conductor service refused connection or is not running.")
+    except Exception as error:
+        print(str(error))
 
-try:
-    sparts.catalog.populate_categories()
-except sparts.exceptions.APIError as error:
-    print("Failed to get part categories from the ledger. " + str(error))
-except ReadTimeout:
-    print("Failed to get part categories from the ledger. Conductor service timed out")
-except ConnectionError:
-    print("Failed to get part categories from the ledger. " \
-        + "The conductor service refused connection or is not running.")
-except Exception as error:
-    print(str(error))
+    try:
+        sparts.catalog.populate_categories()
+    except sparts.exceptions.APIError as error:
+        print("Failed to get part categories from the ledger. " + str(error))
+    except ReadTimeout:
+        print("Failed to get part categories from the ledger. Conductor service timed out")
+    except ConnectionError:
+        print("Failed to get part categories from the ledger. " \
+            + "The conductor service refused connection or is not running.")
+    except Exception as error:
+        print(str(error))
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
