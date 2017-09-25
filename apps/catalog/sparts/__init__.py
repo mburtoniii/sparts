@@ -37,7 +37,7 @@ app.jinja_env.globals['get_resource_as_string'] = get_resource_as_string
 
 # import controllers
 
-from sparts.database import db_session, Base
+from sparts.database import db_session, Base, engine
 import sparts.views
 from sparts.views import render_page, stacktrace
 import sparts.catalog
@@ -46,7 +46,7 @@ import sparts.sampledata
 import sparts.api
 from sparts.api import register_app_with_blockchain
 
-if not Base.metadata.tables.keys():
+if not engine.table_names():
     print("Tables have not been created. Try calling init_db() in database.py")
     sys.exit(1)
 
