@@ -8,7 +8,7 @@ The following are required packages for Debian-based systems. Open a terminal as
 
     $ apt-get update
     
-    $ apt install build-essential git ssh python3 python3-pip apache2 libapache2-mod-wsgi-py3
+    $ apt install git python3 python3-pip apache2 libapache2-mod-wsgi-py3
 
     $ pip3 install --upgrade pip
     

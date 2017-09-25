@@ -8,7 +8,7 @@ The following are required packages for Debian-based systems. Open a terminal as
 
     $ apt-get update
 
-    $ apt install build-essential git ssh python3 python3-pip apache2 libapache2-mod-wsgi-py3 postgresql postgresql-contrib
+    $ apt install git python3 python3-pip apache2 libapache2-mod-wsgi-py3 postgresql postgresql-contrib
 
     $ pip3 install --upgrade pip
 
@@ -43,6 +43,8 @@ Start by selecting a username and a password for a database account. You should 
     $ grant all privileges on database "sparts_catalog" to sparts_admin;
 
     $ \q
+    
+    $ exit
 
 ## Configure the web server ##
 #### Clone server files ####
@@ -101,7 +103,7 @@ Now, we create two directories for upload data and artifacts data. Upload direct
 
     $ mkdir -p /var/www/sparts/apps/catalog/artifacts
 
-    $ chown www-data:www-data /var/www/sparts/apps/catalog/artifacts
+    $ chown www-data:www-data /var/www/sparts/apps/catalog/upload
 
     $ chown www-data:www-data /var/www/sparts/apps/catalog/artifacts
 
