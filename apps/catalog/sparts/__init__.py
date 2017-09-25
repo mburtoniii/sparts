@@ -46,11 +46,9 @@ import sparts.sampledata
 import sparts.api
 from sparts.api import register_app_with_blockchain
 
-if not engine.table_names():
-    print("Tables have not been created. Try calling init_db() in database.py")
-    sys.exit(1)
+# do not run the following if no tables exist in the database
+if engine.table_names():
 
-else:
     try:
         register_app_with_blockchain()
     except sparts.exceptions.APIError as error:
