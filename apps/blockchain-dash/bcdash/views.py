@@ -115,28 +115,6 @@ def query_ledger_components():
             + " to query the blockchain. " + str(error))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @app.route("/")
 def home():
     """display status information about the blockchain. Eventually, this might be its own app.
@@ -176,8 +154,6 @@ def home():
     except APIError as error:
         return render_page("error", error_message="Failed to call the conductor API service. " \
             + str(error))
-
-
 
 
 @app.route("/blockchain/nodes/status/<uuid>")
