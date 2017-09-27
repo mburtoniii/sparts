@@ -104,15 +104,17 @@ def get_ledger_api_address():
 def register_app_with_blockchain():
     """call the  conductor service to register this app (bcdash catalog) on the supply chain network
     """
+    if app.config["BYPASS_API_CALLS"]:
+        return
+
+    print("Registering app with blockchain...")
+
     data = {
         "uuid": "520e7ee6-26f6-4cd0-6710-49c3579086f4",
         "api_url": "",
         "type": "website",
         "label": "Blockchain Dashboard"
     }
-
-    if app.config["BYPASS_API_CALLS"]:
-        return
 
     response = requests.post(API_SERVER + "/app/register", data=json.dumps(data), \
         headers={'Content-type': 'application/json'}, timeout=app.config["DEFAULT_API_TIMEOUT"])
@@ -127,13 +129,11 @@ def register_app_with_blockchain():
         raise APIError("Failed to register app with blockchain. Invalid JSON return data " \
             + "'" + str(response.content)) + "'"
 
-    if "status" not in result:
-        raise APIError("Failed to register app with blockchain. Invalid JSON return data " \
-            + ": Missing required field 'status'.")
-
-    if result["status"] != "success":
+    if "status" in result and result["status"] != "success":
         raise APIError("Failed to register app with blockchain. Server returned status '" \
             + str(result["status"]) + "'.")
+
+    return result
 
 
 def get_bc_suppliers():
