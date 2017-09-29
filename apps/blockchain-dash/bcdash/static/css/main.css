@@ -447,3 +447,11 @@ h3 {
     height: 30px;
     width: 30px;
 }
+
+.blockchain-app-popup-content {
+    display: none;
+}
+
+.blockchain-app {
+    cursor: pointer;
+}

@@ -13,29 +13,23 @@ OR CONDITIONS OF ANY KIND, either express or implied.
 
 sparts catalog package
 """
-
 import sys
 import os
 
 from flask import Flask, jsonify
 from requests.exceptions import ReadTimeout, ConnectionError
-# from werkzeug.contrib.cache import SimpleCache
 
 app = Flask(__name__)
-
-# application_cache = SimpleCache(threshold=64, default_timeout=3600)
 
 app.config.from_object("config")
 
 def get_resource_as_string(name, charset='utf-8'):
-    """for writing css or javascript files directly in the html document.
+    """write css or javascript files directly into the html document.
     """
     with app.open_resource(name) as file:
         return file.read().decode(charset)
 
 app.jinja_env.globals['get_resource_as_string'] = get_resource_as_string
-
-# import controllers
 
 from sparts.database import db_session, Base, engine
 import sparts.views
@@ -44,33 +38,18 @@ import sparts.catalog
 import sparts.envelope
 import sparts.sampledata
 import sparts.api
-from sparts.api import register_app_with_blockchain
 
 # do not run the following if no tables exist in the database
 if engine.table_names():
 
     try:
-        register_app_with_blockchain()
+        sparts.api.register_app_with_blockchain()
     except sparts.exceptions.APIError as error:
-        print("Failed to register app with blockchain. " + str(error))
-    except ReadTimeout:
-        print("Failed to register app with blockchain. Conductor service timed out")
-    except ConnectionError:
-        print("Failed to register app with blockchain. " \
-            + "The conductor service refused connection or is not running.")
-    except Exception as error:
         print(str(error))
 
     try:
         sparts.catalog.populate_categories()
     except sparts.exceptions.APIError as error:
-        print("Failed to get part categories from the ledger. " + str(error))
-    except ReadTimeout:
-        print("Failed to get part categories from the ledger. Conductor service timed out")
-    except ConnectionError:
-        print("Failed to get part categories from the ledger. " \
-            + "The conductor service refused connection or is not running.")
-    except Exception as error:
         print(str(error))
 
 @app.teardown_appcontext
