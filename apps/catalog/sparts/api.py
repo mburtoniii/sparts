@@ -150,15 +150,17 @@ def get_ledger_api_address():
 def register_app_with_blockchain():
     """call the  conductor service to register this app (sparts catalog) on the supply chain network
     """
+    if app.config["BYPASS_API_CALLS"]:
+        return
+
+    print("Registering app with blockchain...")
+
     data = {
         "uuid": "9fb84fa0-1716-4367-7012-61370e23028f",
         "api_url": "http://open.windriver.com:5000",
         "type": "website",
         "label": "Sparts Catalog"
     }
-
-    if app.config["BYPASS_API_CALLS"]:
-        return
 
     try:
         response = requests.post(API_SERVER + "/app/register", data=json.dumps(data), \
@@ -179,13 +181,11 @@ def register_app_with_blockchain():
         raise APIError("Failed to register app with blockchain. Invalid JSON return data " \
             + "'" + str(response.content)) + "'"
 
-    if "status" not in result:
-        raise APIError("Failed to register app with blockchain. Invalid JSON return data " \
-            + ": Missing required field 'status'.")
-
-    if result["status"] != "success":
+    if "status" in result and result["status"] != "success":
         raise APIError("Failed to register app with blockchain. Server returned status '" \
             + str(result["status"]) + "'.")
+
+    return result
 
 
 def save_part_supplier_relation(part, supplier):

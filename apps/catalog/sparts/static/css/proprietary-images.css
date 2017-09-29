@@ -14,7 +14,7 @@ OR CONDITIONS OF ANY KIND, either express or implied.
 
 .carousel-item-container {
     position: relative;
-    height: 500px;
+    height: 400px;
     width: 100%;
     overflow: hidden;
 
@@ -24,19 +24,21 @@ OR CONDITIONS OF ANY KIND, either express or implied.
 
 #carousel-software-picture {
     background-image: url("/static/images/software.jpg");
-    width: 500px;
-    height: 500px;
+    width: 400px;
+    height: 400px;
 }
 
 #carousel-blockchain-picture {
     background-image: url("/static/images/bc.png");
-    width: 610px;
-    height: 610px;
+    width: 520px;
+    height: 520px;
+    margin-top: -40px;
+    margin-left: -20px;
 }
 
 #carousel-trust-picture {
     background-image: url("/static/images/trust.jpg");
-    width: 800px;
-    height: 500px;
+    width: 600px;
+    height: 400px;
     margin-left: -50px;
 }
