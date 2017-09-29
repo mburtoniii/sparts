@@ -473,6 +473,15 @@ func POST_RegisterApplication_EndPoint(http_reply http.ResponseWriter, request *
 		return
 	}
 
+	if ! ValidUUID (app_record.UUID){
+		error_msg := fmt.Sprintf("Incorrect UUID: %s", app_record.UUID )
+		httpReportError(error_msg, http_reply)
+		return
+	}
+
+	fmt.Println ("UUID is: ", app_record.UUID)
+
+/****
 	if ! ApplicationExists(app_record.UUID) {
 		// Application does not exist. 
 		// Return new UUID
@@ -481,7 +490,7 @@ func POST_RegisterApplication_EndPoint(http_reply http.ResponseWriter, request *
 	}
 	
 	reply.UUID = app_record.UUID
-
+*****/
 
 	// TODO: ping to see if up.
 	app_record.Status = "RUNNING"
@@ -497,6 +506,7 @@ func POST_RegisterApplication_EndPoint(http_reply http.ResponseWriter, request *
 		status)
 *****/
    	AddApplicationToDB(app_record)
+    reply.UUID = app_record.UUID
 	httpSendReply(http_reply, reply)
 }
 
