@@ -70,6 +70,13 @@ func GetUUID() string {
 	return u4.String()
 }
 
+
+func ValidUUID (uuid string) bool{
+	// TODO: need to implement ValidUUID
+	// We check to see if the UUID is properly formatted. 
+	return true
+}
+
 // Generate a shorter version of a UUID
 func GetShortId(short_id string, uuid_str string) string {
 	//last_6 = uuid_str[len(uuid_str)-6:]

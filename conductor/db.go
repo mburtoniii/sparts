@@ -78,6 +78,8 @@ func InitializeDB() {
 // Create database tables
 func createDBTables() {
 
+	// TODO: create and store database model version
+
 	openDB()
 	defer theDB.Close()
 
@@ -157,7 +159,7 @@ func createDBTables() {
 		UUID TEXT,
 		Name TEXT,
 		Short_Id TEXT,
-		API_URL TEXT,
+		API_Address TEXT,
 		App_Type TEXT, 
 		Label TEXT,
 		Description TEXT,
@@ -236,7 +238,9 @@ func GetLedgerNodeInfo(uuid string, lnode *ledgerNode) {
 }
 
 // Insert Supply Chain network Application record into the DB
-func AddApplicationToDB(uuid string,
+func AddApplicationToDB(record AppRecord){
+	/*****
+	uuid string,
 	name string,
 	short_id string,
 	api_url string,
@@ -244,15 +248,20 @@ func AddApplicationToDB(uuid string,
 	label string,
 	description string,
 	status string) {
+		*****/
+	
+	// TODO: return succes/failure status
 	openDB()
 	defer theDB.Close()
+
+
 
 	sql_additem := `
 	INSERT OR REPLACE INTO Applications (
 		UUID,
 		Name,
 		Short_Id,
-		API_URL,
+		API_Address,
 		App_Type, 
 		Label,
 		Description,
@@ -266,14 +275,39 @@ func AddApplicationToDB(uuid string,
 		panic(err)
 	}
 
-	_, err2 := stmt.Exec(uuid, name, short_id, api_url,
-		app_type, label, description, status)
+	//_, err2 := stmt.Exec(uuid, name, short_id, api_url,
+    //						app_type, label, description, status)
+    _, err2 := stmt.Exec(record.UUID, record.Name, record.ShortId, record.API_Address, 
+						 record.App_Type, record.Label, record.Description, record.Status)
 	if err2 != nil {
 		panic(err2)
 	}
 
 	//_, err = res.LastInsertId()
 }
+
+
+
+func GetApplicationListDB () []AppRecord {
+
+	var list []AppRecord
+	var record AppRecord
+
+	openDB()
+	defer theDB.Close()
+	rows, err := theDB.Query("SELECT UUID, Name, Short_Id, API_Address, App_Type, Label, Description, Status FROM Applications")
+	checkErr(err)
+
+	for rows.Next() {
+		err = rows.Scan(&record.UUID, &record.Name, &record.ShortId, &record.API_Address, &record.App_Type, 
+			&record.Label, &record.Description, &record.Status)
+		checkErr(err)
+		list = append(list, record)
+	}
+	rows.Close() //good habit to close
+	return list
+}
+
 
 // Insert Ledger node record into the DB
 func AddLedgerNodeToDB(uuid string,
