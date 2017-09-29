@@ -380,15 +380,21 @@ type LedgerNode struct {
 	Description string `json:"description,omitempty"` // 2-3 sentence description
 }
 
-// Handle: GET /api/sparts/ledger_nodes
+// Handle: GET /api/sparts/ledger/nodes
 func GET_LedgerNodes_EndPoint(http_reply http.ResponseWriter, http_request *http.Request) {
 
 	if MAIN_config.Verbose_On {
 		displayURLRequest(http_request)
 	} // display url data
 
-	list := GetLedgerNodesFromDB()
-	httpSendReply(http_reply, list)
+	node_list := GetLedgerNodesFromDB()
+
+	if node_list == nil {
+		// There are no ledger nodes. Create an empty list
+		node_list = make ([]LedgerNode, 0)
+	}
+
+	httpSendReply(http_reply, node_list)
 }
 
 // Handle POST /api/sparts/ledger/register
@@ -606,7 +612,7 @@ func InitializeRestAPI() {
 	router.HandleFunc("/api/sparts/uuid", GET_UUID_EndPoint).Methods("GET")
 	router.HandleFunc("/api/sparts/ledger/address", GET_LedgerAPIAddress_EndPoint).Methods("GET")
 	router.HandleFunc("/api/sparts/ledger/address", POST_LedgerAPIAddress_EndPoint).Methods("POST")
-	router.HandleFunc("/api/sparts/ledger_nodes", GET_LedgerNodes_EndPoint).Methods("GET")
+	router.HandleFunc("/api/sparts/ledger/nodes", GET_LedgerNodes_EndPoint).Methods("GET")
 	router.HandleFunc("/api/sparts/ledger/register", POST_Register_Ledger_EndPoint).Methods("POST")
 	router.HandleFunc("/api/sparts/ledger/node/{uuid}", GET_LedgerNode_EndPoint).Methods("GET")
 	router.HandleFunc("/api/sparts/apps/register", POST_RegisterApplication_EndPoint).Methods("POST")
