@@ -97,29 +97,33 @@ import (
 )
 
 // File global state variables
-var theLedgerAddress string
-var theLedgerPort int
-var __systemReset bool
+var theLedgerAddress 	string
+var theLedgerPort 		int
+var __systemReset 		bool
 
-type Envelope struct {
-	UUID         string `json:"uuid,omitempty"`
-	SupplierUUID string `json:"supplier_uuid,omitempty"`
+// Ledger Node record
+type LedgerNode struct {
+	UUID        string `json:"uuid,omitempty"`        // UUID provide w/previous registration
+	Name        string `json:"name"`                  // Fullname
+	ShortId     string `json:"short_id"`              // 1-5 alphanumeric characters (unique)
+	API_Address string `json:"api_address"`           // e.g., http://147.52.17.33:5000
+	Label       string `json:"label,omitempty"`       // 1-5 words display description
+	Status      string `json:"status,omitempty"`      // RUNNING, DOWN, NOT RESPONDING
+	Description string `json:"description,omitempty"` // 2-3 sentence description
 }
 
 type AppRecord struct {
-		UUID        string `json:"uuid"`                  // 	UUID provide w/previous registration
-		Name        string `json:"name"`                  // Fullname
-		ShortId     string `json:"short_id"`              //	1-5 alphanumeric characters (unique)
-		API_Address string `json:"api_address"`           // <host_address:port> in  http://<host_address:port>
-		App_Type    string `json:"app_type,omitempty"`    // website, monitor
-		Status      string `json:"status,omitempty"`      // RUNNING, DOWN,
-		Label       string `json:"label,omitempty"`       // 1-5 words display description
-		Description string `json:"description,omitempty"` // 2-3 sentence description
+	UUID        string `json:"uuid"`                  // UUID provide w/previous registration
+	Name        string `json:"name"`                  // Fullname
+	ShortId     string `json:"short_id"`              // 1-5 alphanumeric characters (unique)
+	API_Address string `json:"api_address"`           // <host_address:port> in  http://<host_address:port>
+	App_Type    string `json:"app_type,omitempty"`    // website, monitor, company agent,
+	Status      string `json:"status,omitempty"`      // RUNNING, DOWN, NOT RESPONDING
+	Label       string `json:"label,omitempty"`       // 1-5 words display description
+	Description string `json:"description,omitempty"` // 2-3 sentence description
 }
 
-
-
-// Standardize method for sending http error status
+// Standard method for sending http error status
 func httpReportError(error_message string, http_reply http.ResponseWriter) {
 	type replyMessage struct {
 		Status  string `json:"status"`
@@ -131,7 +135,7 @@ func httpReportError(error_message string, http_reply http.ResponseWriter) {
 	httpSendReply(http_reply, replyData)
 }
 
-// Standardize method for sending success status for http requests
+// Standard method for acknowleding success status for http requests
 func httpSuccessReply(http_reply http.ResponseWriter) {
 	type messageReply struct {
 		Status string `json:"status"`
@@ -152,7 +156,7 @@ func displayURLRequest(request *http.Request) {
 	fmt.Println("Client IP:", GetHostIPAddress())
 
 	/*******
-		// Display a copy of this request for debugging.
+		// Display a copy of the request for debugging.
 		requestDump, err := httputil.DumpRequest(request, true)
 		if err != nil {
 	  	fmt.Println(err)
@@ -193,8 +197,8 @@ func httpSendReply(http_reply http.ResponseWriter, data interface{}) {
 	}
 }
 
-// We provide a response when an api call is made but not found
-func notFound(http_reply http.ResponseWriter, request *http.Request) {
+// Response provided when an api call is made but not found
+func httpRequestNotFound(http_reply http.ResponseWriter, request *http.Request) {
 	if MAIN_config.Debug_On {
 		displayURLRequest(request)
 	} // display url data
@@ -205,17 +209,17 @@ func notFound(http_reply http.ResponseWriter, request *http.Request) {
 		DocumentationUrl string `json:"documentation_url"`
 	}
 
-	replyData := notFoundReply{Status: "failed",
+	replyMsg := notFoundReply{
+		Status:           "failed",
 		Message:          "Not Found",
-		DocumentationUrl: "https://github.com/Wind-river/sparts"}
-	httpSendReply(http_reply, replyData)
+		DocumentationUrl: "https://github.com/Wind-river/software_parts_ledger"}
+
+	httpSendReply(http_reply, replyMsg)
 }
 
 // ==============================================
 // ====   API Handler END POINTS routines	=====
 // ==============================================
-
-var envelope_list []Envelope
 
 // Handle: GET /api/sparts/help
 func GetHelpEndPoint(http_reply http.ResponseWriter, request *http.Request) {
@@ -369,11 +373,10 @@ func POST_LedgerAPIAddress_EndPoint(http_reply http.ResponseWriter, http_request
 	}
 }
 
-// Ledger Node record
-type LedgerNode struct {
+type LedgerRegisterRequest struct {
 	Name        string `json:"name"`                  // Fullname
 	ShortId     string `json:"short_id"`              //	1-5 alphanumeric characters (unique)
-	API_URL     string `json:"api_url"`               // e.g., http://147.52.17.33:5000
+	API_Address string `json:"api_address"`           // e.g., http://147.52.17.33:5000
 	UUID        string `json:"uuid,omitempty"`        // 	UUID provide w/previous registration
 	Label       string `json:"label,omitempty"`       // 1-5 words display description
 	Status      string `json:"status,omitempty"`      // RUNNING,
@@ -391,7 +394,7 @@ func GET_LedgerNodes_EndPoint(http_reply http.ResponseWriter, http_request *http
 
 	if node_list == nil {
 		// There are no ledger nodes. Create an empty list
-		node_list = make ([]LedgerNode, 0)
+		node_list = make([]LedgerNode, 0)
 	}
 
 	httpSendReply(http_reply, node_list)
@@ -400,22 +403,13 @@ func GET_LedgerNodes_EndPoint(http_reply http.ResponseWriter, http_request *http
 // Handle POST /api/sparts/ledger/register
 // Register Blockchain server node
 func POST_Register_Ledger_EndPoint(http_reply http.ResponseWriter, request *http.Request) {
-	type LedgerRegisterRequest struct {
-		Name        string `json:"name"`                  // Fullname
-		ShortId     string `json:"short_id"`              //	1-5 alphanumeric characters (unique)
-		API_URL     string `json:"api_url"`               // e.g., http://147.52.17.33:5000
-		UUID        string `json:"uuid,omitempty"`        // 	UUID provide w/previous registration
-		Label       string `json:"label,omitempty"`       // 1-5 words display description
-		Status      string `json:"status,omitempty"`      // RUNNING,
-		Description string `json:"description,omitempty"` // 2-3 sentence description
-	}
 
-	type LedgerRegisterReply struct {
+	type Reply struct {
 		UUID string `json:"uuid"`
 	}
 
-	var ledger_register LedgerRegisterRequest
-	var reply LedgerRegisterReply
+	var ledger_node_record LedgerNode
+	var reply Reply
 
 	if MAIN_config.Verbose_On {
 		displayURLRequest(request)
@@ -425,32 +419,35 @@ func POST_Register_Ledger_EndPoint(http_reply http.ResponseWriter, request *http
 		http.Error(http_reply, "Please send a request body", 400)
 		return
 	}
-	err := json.NewDecoder(request.Body).Decode(&ledger_register)
+	err := json.NewDecoder(request.Body).Decode(&ledger_node_record)
 	if err != nil {
 		http.Error(http_reply, err.Error(), 400)
 		return
 	}
 
-	if LedgerNodeExists(ledger_register.UUID) {
-		// Return already existing UUID
-		reply.UUID = ledger_register.UUID
-	} else {
-		// Return new UUID
-		fmt.Println("its new!!")
-		reply.UUID = GetUUID()
+	if !ValidUUID(ledger_node_record.UUID) {
+		error_msg := fmt.Sprintf("Incorrect UUID: %s", ledger_node_record.UUID)
+		httpReportError(error_msg, http_reply)
+		return
 	}
 
+	fmt.Println("UUID is: ", ledger_node_record.UUID)
+
+	/*************
+		if LedgerNodeExists(ledger_register.UUID) {
+			// Return already existing UUID
+			reply.UUID = ledger_register.UUID
+		} else {
+			// Return new UUID
+			fmt.Println("its new!!")
+			reply.UUID = GetUUID()
+		}
+	*************/
 	// TODO - ping to see if up.
-	status := "RUNNING"
+	ledger_node_record.Status = "RUNNING"
 
-	AddLedgerNodeToDB(reply.UUID,
-		ledger_register.Name,
-		ledger_register.ShortId,
-		ledger_register.API_URL,
-		ledger_register.Label,
-		ledger_register.Description,
-		status) //
-
+	AddLedgerNodeToDB(ledger_node_record) //
+	reply.UUID = ledger_node_record.UUID
 	httpSendReply(http_reply, reply)
 }
 
@@ -464,11 +461,10 @@ func POST_RegisterApplication_EndPoint(http_reply http.ResponseWriter, request *
 	var app_record AppRecord
 	var reply AppRegisterReply
 
-
 	if MAIN_config.Verbose_On {
 		displayURLRequest(request)
 	} // display url data
-	
+
 	if request.Body == nil {
 		http.Error(http_reply, "Please send a request body", 400)
 		return
@@ -479,58 +475,58 @@ func POST_RegisterApplication_EndPoint(http_reply http.ResponseWriter, request *
 		return
 	}
 
-	if ! ValidUUID (app_record.UUID){
-		error_msg := fmt.Sprintf("Incorrect UUID: %s", app_record.UUID )
+	if !ValidUUID(app_record.UUID) {
+		error_msg := fmt.Sprintf("Incorrect UUID: %s", app_record.UUID)
 		httpReportError(error_msg, http_reply)
 		return
 	}
 
-	fmt.Println ("UUID is: ", app_record.UUID)
+	fmt.Println("UUID is: ", app_record.UUID)
 
-/****
-	if ! ApplicationExists(app_record.UUID) {
-		// Application does not exist. 
-		// Return new UUID
-		fmt.Println("App is new!!")
-		app_record.UUID = GetUUID()
-	}
-	
-	reply.UUID = app_record.UUID
-*****/
+	/****
+		if ! ApplicationExists(app_record.UUID) {
+			// Application does not exist.
+			// Return new UUID
+			fmt.Println("App is new!!")
+			app_record.UUID = GetUUID()
+		}
+
+		reply.UUID = app_record.UUID
+	*****/
 
 	// TODO: ping to see if up.
 	app_record.Status = "RUNNING"
 
-/****
-	AddApplicationToDB(reply.UUID,
-		app_register.Name,
-		app_register.ShortId,
-		app_register.API_URL,
-		app_register.App_Type,
-		app_register.Label,
-		app_register.Description,
-		status)
-*****/
-   	AddApplicationToDB(app_record)
-    reply.UUID = app_record.UUID
+	/****
+		AddApplicationToDB(reply.UUID,
+			app_register.Name,
+			app_register.ShortId,
+			app_register.API_URL,
+			app_register.App_Type,
+			app_register.Label,
+			app_register.Description,
+			status)
+	*****/
+	AddApplicationToDB(app_record)
+	reply.UUID = app_record.UUID
 	httpSendReply(http_reply, reply)
 }
 
 // Handle: GET /api/sparts/apps
-// Returns: 
-//			
+// Returns:
+//
 func GET_Applications_EndPoint(http_reply http.ResponseWriter, request *http.Request) {
 
 	var app_list []AppRecord
-	app_list = GetApplicationListDB ()
+	app_list = GetApplicationListDB()
 
 	if app_list == nil {
 		// We have an empty list. Create an empty list
-		httpSendReply(http_reply, make ([]AppRecord, 0))
+		httpSendReply(http_reply, make([]AppRecord, 0))
 	} else {
-	    httpSendReply(http_reply, app_list)
+		httpSendReply(http_reply, app_list)
 	}
-   ///	io.WriteString(http_reply, string (app_list[:]))
+	///	io.WriteString(http_reply, string (app_list[:]))
 }
 
 //  Handle: GET /api/sparts/ledger/node/{uuid}
@@ -550,16 +546,15 @@ func GET_LedgerNode_EndPoint(http_reply http.ResponseWriter, request *http.Reque
 
 }
 
-
 // Handle: GET /api/sparts/ledger/uptime
-func GET_Ledger_Uptime_Endpoint (http_reply http.ResponseWriter, request *http.Request){
+func GET_Ledger_Uptime_Endpoint(http_reply http.ResponseWriter, request *http.Request) {
 	type TimeStampReply struct {
 		Time_Stamp string `json:"time_stamp"`
 	}
 
 	var uptime TimeStampReply
 
-    // Use dumpy value for now. 
+	// Use dumpy value for now.
 	// TODO: Need go allow value set by ledger
 	// 		 and store/retreived from DB
 	uptime.Time_Stamp = "2017-09-21 15:08:12.0658324 -0800 PST"
@@ -613,12 +608,12 @@ func InitializeRestAPI() {
 	router.HandleFunc("/api/sparts/ledger/address", GET_LedgerAPIAddress_EndPoint).Methods("GET")
 	router.HandleFunc("/api/sparts/ledger/address", POST_LedgerAPIAddress_EndPoint).Methods("POST")
 	router.HandleFunc("/api/sparts/ledger/nodes", GET_LedgerNodes_EndPoint).Methods("GET")
-	router.HandleFunc("/api/sparts/ledger/register", POST_Register_Ledger_EndPoint).Methods("POST")
-	router.HandleFunc("/api/sparts/ledger/node/{uuid}", GET_LedgerNode_EndPoint).Methods("GET")
+	router.HandleFunc("/api/sparts/ledger/nodes", POST_Register_Ledger_EndPoint).Methods("POST")
+	router.HandleFunc("/api/sparts/ledger/nodes/{uuid}", GET_LedgerNode_EndPoint).Methods("GET")
 	router.HandleFunc("/api/sparts/apps/register", POST_RegisterApplication_EndPoint).Methods("POST")
 	router.HandleFunc("/api/sparts/apps", GET_Applications_EndPoint).Methods("GET")
 	router.HandleFunc("/api/sparts/ledger/uptime", GET_Ledger_Uptime_Endpoint).Methods("GET")
-	
+
 	// General requests
 	router.HandleFunc("/api/sparts/ping", GET_Ping_EndPoint).Methods("GET")
 	router.HandleFunc("/api/sparts/reset", GET_Restore_EndPoint).Methods("GET")
@@ -630,7 +625,7 @@ func InitializeRestAPI() {
 	// Get help
 	router.HandleFunc("/api/sparts/help", GetHelpEndPoint).Methods("GET")
 
-	router.NotFoundHandler = http.HandlerFunc(notFound)
+	router.NotFoundHandler = http.HandlerFunc(httpRequestNotFound)
 }
 
 // Main wait, listen and response to API requests.

@@ -45,6 +45,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"path/filepath"
 	"net"
 	//"os"
 	"github.com/nu7hatch/gouuid"
@@ -70,11 +71,16 @@ func GetUUID() string {
 	return u4.String()
 }
 
-
-func ValidUUID (uuid string) bool{
+func ValidUUID(uuid string) bool {
 	// TODO: need to implement ValidUUID
-	// We check to see if the UUID is properly formatted. 
-	return true
+	// We check to see if the UUID is properly formatted.
+
+	// The only check currently have is the lenght
+	if len(uuid) == 36 {
+		return true
+	} else {
+		return false
+	}
 }
 
 // Generate a shorter version of a UUID
@@ -96,6 +102,21 @@ func GetHostIPAddress() string {
 	defer conn.Close()
 	torn := strings.Split(conn.LocalAddr().String(), ":")
 	return torn[0]
+}
+
+
+// Parses a a full  file path name
+// RETURNS: directory path, filename, file base name (name w/o ext), file extension
+// Example: Path: "./d1/d2/d3/my_code.go"
+//			Returns: "./d1/d2/d3/", "my_data.db", "my_data", ".db"
+func FilenameDirectorySplit (full_file_path string) (string, string, string, string) {
+
+	filename := filepath.Base(full_file_path)
+	file_extension := filepath.Ext(full_file_path)
+	base_name := filename[:len(filename)-len(file_extension)]
+	dir_path := full_file_path[:(len(full_file_path)-len(filename))]
+
+	return dir_path, filename, base_name, file_extension;
 }
 
 /***
