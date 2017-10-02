@@ -13,16 +13,11 @@ OR CONDITIONS OF ANY KIND, either express or implied.
 
 Ledger API service calls
 """
-
 import json
 import requests
-from requests.exceptions import ReadTimeout, ConnectionError
+from requests.exceptions import ReadTimeout
 from sparts import app, jsonify
 from sparts.exceptions import APIError
-
-
-API_SERVER = app.config["BLOCKCHAIN_API"]
-
 
 @app.route("/api/sparts/ping")
 def ping_handler():
@@ -34,291 +29,195 @@ def get_uuid():
     """call the conductor service to a unique UUID
     """
     try:
-        response = requests.get(API_SERVER + "/uuid", timeout=app.config["DEFAULT_API_TIMEOUT"])
-    except ReadTimeout:
-        raise APIError("Failed to get new UUID. Conductor service timed out")
-    except ConnectionError:
-        raise APIError("Failed to get new UUID. " \
-            + "The conductor service refused connection or is not running.")
-
-    if response.status_code != 200:
-        raise APIError("Failed to call the blockchain API to get a UUID. Conductor server " \
-            + "responded with status " + response.status_code)
-
-    try:
-        data = response.json()
-    except:
-        raise APIError("Failed to parse the JSON in the call to the conductor service " \
-            + "to retrieve a new UUID.")
-
-    return data["uuid"]
-
-def ping_node(node_api_url, timeout=app.config["DEFAULT_API_TIMEOUT"]):
-    """ping a blockchain node and return its status
-    """
-    if not node_api_url:
-        return "Node did not provide a ledger service API URL"
-
-    try:
-        response = requests.get(node_api_url + "/api/sparts/ping", timeout=timeout)
-    except ReadTimeout:
-        raise APIError("Failed to ping node. Conductor service timed out")
-    except ConnectionError:
-        raise APIError("Failed to ping node. " \
-            + "The conductor service refused connection or is not running.")
-
-    if response.status_code != 200:
-        return "Down (HTTP " + str(response.status_code) + ")"
-
-    try:
-        data = response.json()
-    except:
-        return "Down' Returns invalid JSON."
-
-    if "status" not in data:
-        return "Down. Returns invalid JSON: missing 'status'"
-
-    print(data)
-
-    if data["status"] != "success":
-        return "Down. Status: '" + str(data["status"]) + "'"
-
-    return "Running"
-
-def get_blockchain_nodes():
-    """get a list of nodes running the ledger and their status from the conductor API
-    """
-    try:
-        response = requests.get(API_SERVER + "/ledger_nodes", timeout=app.config["DEFAULT_API_TIMEOUT"])
-    except ReadTimeout:
-        raise APIError("Failed to get blockchain nodes. Conductor service timed out")
-    except ConnectionError:
-        raise APIError("Failed to get blockchain nodes. " \
-            + "The conductor service refused connection or is not running.")
-
-    print(API_SERVER + "/ledger/nodes")
-
-    if response.status_code != 200:
-        raise APIError("Failed to call the conductor service to get list of blockchain nodes. " \
-            + "Server responded with status " + response.status_code)
-
-    try:
-        nodes = response.json()
-    except:
-        raise APIError("Failed to parse the JSON in the call to the conductor service " \
-            + "to retrieve list of running blockchain nodes.")
-
-    if "status" in nodes and nodes["status"] != "success":
-        raise APIError("Failed to call the conductor service to get list of blockchain nodes. " \
-            + "Server returned status '" + nodes["status"] + "'." )
-
-    return nodes
-
-
-def get_ledger_api_address():
-    """get the address of the ledger service from the conductor
-
-    Returns:
-        (tuple) ip, port
-    """
-    try:
-        response = requests.get(API_SERVER + "/ledger/address", \
-            timeout=app.config["DEFAULT_API_TIMEOUT"])
-    except ReadTimeout:
-        raise APIError("Failed to get ledger API address. Conductor service timed out")
-    except ConnectionError:
-        raise APIError("Failed to get ledger API address. " \
-            + "The conductor service refused connection or is not running.")
-
-    if response.status_code != 200:
-        raise APIError("Failed to retrieve the blockchain API server address.")
-
-    try:
-        ledger_address = response.json()
-    except:
-        raise APIError("Failed to parse the JSON response of the blockchain API server. Got:" \
-            + " <br><br><pre>" + str(response.content) + "</pre>")
-
-    if "ip_address" not in ledger_address or ledger_address["ip_address"] == "0.0.0.0":
-        raise APIError("Failed to retrieve the blockchain API server address. " \
-            + "Could not read a valid IP address. Got '" + str(ledger_address) + "'.")
-
-    return ledger_address["ip_address"], ledger_address["port"]
-
-
+        response = call_conductor_api("get", "/uuid")
+        if "uuid" in response:
+            return response["uuid"]
+        else:
+            raise APIError("The call to conductor to get a new UUID failed. The response did " \
+                + "not contain a UUID.")
+    except APIError as error:
+        raise APIError("Failed to get a new UUID from conductor service. " + str(error))
 
 def register_app_with_blockchain():
     """call the  conductor service to register this app (sparts catalog) on the supply chain network
     """
-    if app.config["BYPASS_API_CALLS"]:
-        return
-
     print("Registering app with blockchain...")
 
     data = {
+        "name": "Software Parts Catalog",
+        "label": "Software Parts Catalog",
         "uuid": "9fb84fa0-1716-4367-7012-61370e23028f",
-        "api_url": "http://open.windriver.com:5000",
-        "type": "website",
-        "label": "Sparts Catalog"
+        "api_address": "http://catalog.open.windriver.com",
+        "app_type": "website",
+        "description": "Software Parts Catalog"
     }
 
     try:
-        response = requests.post(API_SERVER + "/app/register", data=json.dumps(data), \
-            headers={'Content-type': 'application/json'}, timeout=app.config["DEFAULT_API_TIMEOUT"])
-    except ReadTimeout:
-        raise APIError("Failed to register app with blockchain. Conductor service timed out")
-    except ConnectionError:
-        raise APIError("Failed to register app with blockchain. " \
-            + "The conductor service refused connection or is not running.")
-
-    if response.status_code != 200:
-        raise APIError("Failed to register app with blockchain. Server responded with " \
-            + "HTTP " + str(response.status_code))
-
-    try:
-        result = response.json()
-    except:
-        raise APIError("Failed to register app with blockchain. Invalid JSON return data " \
-            + "'" + str(response.content)) + "'"
-
-    if "status" in result and result["status"] != "success":
-        raise APIError("Failed to register app with blockchain. Server returned status '" \
-            + str(result["status"]) + "'.")
-
-    return result
-
+        return call_conductor_api("post", "/apps/register", data)
+    except APIError as error:
+        raise APIError("Failed to register app with blockchain. " + str(error))
 
 def save_part_supplier_relation(part, supplier):
-    call_blockchain_api("post", "/ledger/mapping/PartSupplier", {
-        "part_uuid": part.uuid,
-        "supplier_uuid": supplier.uuid
-    })
-
+    """save part supplier relation to blockchain
+    """
+    try:
+        call_ledger_api("post", "/ledger/mapping/PartSupplier", {
+            "part_uuid": part.uuid,
+            "supplier_uuid": supplier.uuid
+        })
+    except APIError as error:
+        raise APIError("Failed to save part-supplier relation. " + str(error))
 
 def save_part_category_relation(part, category):
-    call_blockchain_api("post", "/ledger/parts/AddCategory", {
-        "part_uuid": part.uuid,
-        "category_uuid": category.uuid
-    })
+    """save part category relation to blockchain
+    """
+    try:
+        call_ledger_api("post", "/ledger/parts/AddCategory", {
+            "part_uuid": part.uuid,
+            "category_uuid": category.uuid
+        })
+    except APIError as error:
+        raise APIError("Failed to save part-category relation. " + str(error))
 
 def save_part_envelope_relation(part, envelope):
-    call_blockchain_api("post", "/ledger/parts/AddEnvelope", {
-        "part_uuid": part.uuid,
-        "envelope_uuid": envelope.uuid
-    })
-
+    """save part envelope relation to blockchain
+    """
+    try:
+        call_ledger_api("post", "/ledger/parts/AddEnvelope", {
+            "part_uuid": part.uuid,
+            "envelope_uuid": envelope.uuid
+        })
+    except APIError as error:
+        raise APIError("Failed to save part-envelope relation. " + str(error))
 
 def get_blockchain_categories():
     """get list of part categories
     """
-    return call_blockchain_api("get", "/ledger/categories")
+    try:
+        return call_ledger_api("get", "/ledger/categories")
+    except APIError as error:
+        raise APIError("Failed to get blockchain categories. " + str(error))
 
 def save_category_to_blockchain(category):
-    call_blockchain_api("post", "/ledger/categories", {
-        "uuid": category.uuid,
-        "name": category.name,
-        "description": category.description
-    })
+    """save category to blockchain
+    """
+    try:
+        call_ledger_api("post", "/ledger/categories", {
+            "uuid": category.uuid,
+            "name": category.name,
+            "description": category.description
+        })
+    except APIError as error:
+        raise APIError("Failed to get save category to blockchain. " + str(error))
 
 def save_supplier_to_blockchain(supplier):
     """save the given supplier on the blockchain by calling the ledger service
     """
-    call_blockchain_api("post", "/ledger/suppliers", {
-        "uuid": supplier.uuid,
-        "short_id": "",
-        "name": supplier.name,
-        "passwd": supplier.password,
-        "url": ""
-    })
+    try:
+        call_ledger_api("post", "/ledger/suppliers", {
+            "uuid": supplier.uuid,
+            "short_id": "",
+            "name": supplier.name,
+            "passwd": supplier.password,
+            "url": ""
+        })
+    except APIError as error:
+        raise APIError("Failed to save supplier to blockchain. " + str(error))
 
 def save_part_to_blockchain(part):
     """save the given part on the blockchain by calling the ledger service
     """
-    call_blockchain_api("post", "/ledger/parts", {
-        "uuid": part.uuid,
-        "name": part.name,
-        "checksum": "",
-        "version": part.version,
-        "src_uri": part.url,
-        "licensing": part.licensing,
-        "label": "",
-        "description": part.description
-    })
+    try:
+        call_ledger_api("post", "/ledger/parts", {
+            "uuid": part.uuid,
+            "name": part.name,
+            "checksum": "",
+            "version": part.version,
+            "src_uri": part.url,
+            "licensing": part.licensing,
+            "label": "",
+            "description": part.description
+        })
+    except APIError as error:
+        raise APIError("Failed to save part to blockchain. " + str(error))
 
 def save_envelope_to_blockchain(envelope):
     """save the given envelope on the blockchain by calling the ledger service
     """
-    call_blockchain_api("post", "/ledger/envelopes", json.loads(envelope.toc))
+    try:
+        call_ledger_api("post", "/ledger/envelopes", json.loads(envelope.toc))
+    except APIError as error:
+        raise APIError("Failed to save envelope to blockchain. " + str(error))
 
-
-def call_blockchain_api(method, url, data={}):
+def call_ledger_api(method, url, data={}):
     """ call the blockchain ledger service with the given method (post or get), url, and data.
+    """
+    try:
+        return call_api_service(method, get_ledger_address() + url, data)
+    except APIError as error:
+        raise APIError("Failed to call ledger API service. " + str(error))
+
+def get_ledger_address():
+    """get the address of the ledger service from the conductor
+    """
+    try:
+        ledger_address = call_conductor_api("get", "/ledger/address")
+        return "http://" + str(ledger_address["ip_address"]) + ":" + str(ledger_address["port"]) \
+            + "/api/sparts"
+    except APIError as error:
+        raise APIError("Failed to get the ledger API address. " + str(error))
+
+def call_conductor_api(method, url, data={}):
+    """call the conductor service
+    """
+    try:
+        return call_api_service(method, app.config["BLOCKCHAIN_API"] + url, data)
+    except APIError as error:
+        raise APIError("Failed to call the conductor API service. " + str(error))
+
+def call_api_service(method, url, data):
+    """call the API service at url with given HTTP method and parameters
     """
     if app.config["BYPASS_API_CALLS"]:
         return {}
 
-    bc_server_ip, bc_server_port = get_ledger_api_address()
-
-    request_url = "http://" + bc_server_ip + ":" + str(bc_server_port) + "/api/sparts" + url
-
-    print("[" + method + "] " + request_url)
-
-    result = None
-
     try:
+        print("Calling [" + method + "] " + url)
+        print("with " + str(data))
 
         if method == "get":
-            result = requests.get(request_url, params=data, timeout=app.config["DEFAULT_API_TIMEOUT"])
-
+            response = requests.get(url, params=data, \
+                timeout=app.config["DEFAULT_API_TIMEOUT"])
         elif method == "post":
-            result = requests.post(request_url, data=json.dumps(data), \
+            response = requests.post(url, data=json.dumps(data), \
                 headers={'Content-type': 'application/json'}, \
                 timeout=app.config["DEFAULT_API_TIMEOUT"])
-
         else:
-            raise APIError("Bad method passed to function 'call_blockchain_api")
+            raise APIError("Bad method passed to function `call_api()`. Got `" + method \
+                + "`; expected 'get' or 'post'.")
+
+        if response.status_code != 200:
+            raise APIError("The call to " + url + " resulted in HTTP status " \
+                + str(response.status_code))
+
+        try:
+            json_response = response.json()
+        except:
+            raise APIError("Failed to parse the JSON data in the response of API service at " \
+                + url + ". The response was `" + str(response.content) + "`.")
+
+        if "status" in json_response and json_response["status"] != "success":
+            raise APIError("API service at '" + url + "' returned status '" \
+                + str(json_response["status"]) + "', with the following details: " \
+                + str(json_response))
+
+        return json_response
 
     except ReadTimeout:
-        raise APIError("Blockchain ledger service timed out.")
+        raise APIError("Connection to " + url + " timed out.")
 
     except ConnectionError:
-        raise APIError("Blockchain ledger service refused connection.")
+        raise APIError("API service at " + url + " refused connection.")
 
     except Exception as error:
-        raise APIError("Failed to call blockchain ledger service API. " + str(error))
-
-
-    if result.status_code != 200:
-        raise APIError("The blockchain API server responeded with HTTP " + \
-            str(result.status_code) + ".")
-
-    # hack to bypass invalid JSON value when blockchain is empty
-    if result.content == "[{[]}]":
-        return []
-
-    json_result = None
-    try:
-        json_result = result.json()
-    except:
-        raise APIError("Failed to parse the following JSON data in the response of the blockchain" \
-            +" API server.<br><br><pre>" + str(result.content) + "</pre>")
-
-    if "status" in json_result:
-        # raise APIError("Invalid JSON in the response of the ledger service at " + url \
-        #     + "Missing required field 'status'")
-
-        if json_result["status"] == "failed":
-            if "error_message" in json_result:
-                raise APIError("Leger service call to '" + url + "' failed. " \
-                    + "The API server provided the following reason: '" \
-                    + json_result["error_message"] + "'.")
-
-            else:
-                raise APIError("Leger service call to '" + url + "' failed." + \
-                    "No error_message was provided by the server.")
-
-        if json_result["status"] != "success":
-            raise APIError("Leger service call to '" + url + "' returned 'status' = '" \
-                + json_result["status"] + "'.")
-
-    return json_result
+        raise APIError("Failed to call the API service at " + url + ". " + str(error))

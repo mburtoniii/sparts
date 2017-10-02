@@ -76,6 +76,10 @@ $(document).on("click", ".blockchain-node", function(evt) {
     popup_message("Node Details", $(this).find(".blockchain-node-popup-content").html());
 });
 
+$(document).on("click", ".blockchain-app", function(evt) {
+    popup_message("App Details", $(this).find(".blockchain-app-popup-content").html());
+});
+
 $(document).on("click", ".bc-envelope-link", function(evt) {
     popup_message("Envelope Details",
         $(this).parent().find(".bc-envelope-details-popup").html());

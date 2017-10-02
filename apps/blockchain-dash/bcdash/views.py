@@ -17,8 +17,9 @@ import json
 from flask import render_template, Response, jsonify
 from requests.exceptions import ReadTimeout, ConnectionError
 from bcdash import app
-from bcdash.api import get_blockchain_nodes, get_ledger_api_address, ping_node, \
-    get_bc_suppliers, get_bc_parts, get_bc_categories, get_bc_envelopes
+from bcdash.api import get_blockchain_nodes, get_ledger_address, ping_node, \
+    get_bc_suppliers, get_bc_parts, get_bc_categories, get_bc_envelopes, get_blockchain_apps, \
+    get_ledger_uptime
 from bcdash.exceptions import APIError
 
 def render_page(template, title="", *args, **kwargs):
@@ -63,6 +64,9 @@ def query_ledger_components():
 
         for part in parts:
 
+            if "categories" not in part:
+                break
+
             category_uuids = [category["category_id"] for category in part.pop("categories")]
             part["categories"] = []
 
@@ -106,54 +110,42 @@ def query_ledger_components():
             envelopes_count=len([envelope for envelope in envelopes \
                 if envelope["content_type"] == "this"]))
 
-    except ConnectionError:
-        return render_page("error", error_message="The conductor service refused connection." \
-            + " Could not query blockchain status at this time. Please try again later.")
-
     except APIError as error:
-        return render_page("error", error_message="Failed to call the conductor API service" \
-            + " to query the blockchain. " + str(error))
+        return render_template("error.html", error_message=str(error))
 
 
 @app.route("/")
 def home():
     """display status information about the blockchain. Eventually, this might be its own app.
     """
-
-    uptime_sample = str(datetime.datetime.now() - datetime.datetime(2017, 7, 9, 12, 44))
-    uptime_sample = ".".join(uptime_sample.split(".")[:-1])
-
-    # dict supplier.id -> list of part instances by this supplier
-    supplier_parts = {}
-
-    # dict supplier.id -> supplier instance
-
-    apps = ["Sparts", "BC Dash"]
-
     try:
+        timestamp = get_ledger_uptime()["time_stamp"]
 
-        ledger_ip, ledger_port = get_ledger_api_address()
+        # remove microseconds and timezone information
+        timestamp_no_us = timestamp.split(".")[0]
 
+        # calculate difference until now
+        startup_time = datetime.datetime.strptime(timestamp_no_us, "%Y-%m-%d %H:%M:%S")
+        uptime_duration = str(datetime.datetime.now() - startup_time)
+
+        # remove microseconds from uptime
+        uptime = ".".join(uptime_duration.split(".")[:-1])
 
         # envelope_count=len(envelopes), \
         # supplier_count=len(suppliers), \
         # part_count=len(parts))
 
-        return render_page("home", uptime=uptime_sample, \
-            apps=apps, \
-            nodes=get_blockchain_nodes(), \
-            ledger_api_address="http://" + ledger_ip + ":" + str(ledger_port) + "/api/sparts", \
+        return render_page("home", \
+            uptime=uptime, \
+            apps=get_blockchain_apps(), \
+            nodes=get_blockchain_nodes() , \
+            ledger_api_address=get_ledger_address(), \
             envelope_count=0, \
             supplier_count=0, \
             part_count=0)
 
-    except ConnectionError:
-        return render_page("error", error_message="The conductor service refused connection." \
-            + " Could not query blockchain status at this time. Please try again later.")
-
     except APIError as error:
-        return render_page("error", error_message="Failed to call the conductor API service. " \
-            + str(error))
+        return render_page("error", error_message=str(error))
 
 
 @app.route("/blockchain/nodes/status/<uuid>")

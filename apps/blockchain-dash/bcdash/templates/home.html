@@ -77,10 +77,17 @@
             <div class="blockchain-app-icon"></div>
 
             <div class="blockchain-app-name">
-            {{app}}
+            {{app["label"]}}
+            </div>
+
+            <div class="blockchain-app-popup-content">
+                <div><strong>Name</strong>: {{app["name"]}}</div>
+                <div><strong>UUID</strong>: {{app["uuid"]}}</div>
+                <div><strong>App Type</strong>: {{app["app_type"]}}</div>
+                <div><strong>API service</strong>: {{app["api_address"]}}</div>
+                <div><strong>Description</strong>: {{app["description"]}}</div>
             </div>
         </div>
-
     {% endfor %}
 </div>
 

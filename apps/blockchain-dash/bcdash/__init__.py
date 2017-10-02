@@ -13,17 +13,12 @@ OR CONDITIONS OF ANY KIND, either express or implied.
 
 bcdash catalog package
 """
-
 import sys
 import os
 
 from flask import Flask, jsonify
-from requests.exceptions import ReadTimeout, ConnectionError
-# from werkzeug.contrib.cache import SimpleCache
 
 app = Flask(__name__)
-
-# application_cache = SimpleCache(threshold=64, default_timeout=3600)
 
 app.config.from_object("config")
 
@@ -31,14 +26,7 @@ import bcdash.views
 import bcdash.api
 from bcdash.api import register_app_with_blockchain
 
-# register this app with the conductor service
-
 try:
     register_app_with_blockchain()
-except ReadTimeout:
-    print("Failed to register app with blockchain. Conductor service timed out")
-except ConnectionError:
-    print("Failed to register app with blockchain. " \
-        + "The conductor service refused connection or is not running.")
-except Exception as error:
+except exceptions.APIError as error:
     print(str(error))
