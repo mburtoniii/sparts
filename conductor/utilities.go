@@ -45,8 +45,8 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"path/filepath"
 	"net"
+	"path/filepath"
 	//"os"
 	"github.com/nu7hatch/gouuid"
 	"strings"
@@ -104,19 +104,18 @@ func GetHostIPAddress() string {
 	return torn[0]
 }
 
-
 // Parses a a full  file path name
 // RETURNS: directory path, filename, file base name (name w/o ext), file extension
 // Example: Path: "./d1/d2/d3/my_code.go"
 //			Returns: "./d1/d2/d3/", "my_data.db", "my_data", ".db"
-func FilenameDirectorySplit (full_file_path string) (string, string, string, string) {
+func FilenameDirectorySplit(full_file_path string) (string, string, string, string) {
 
 	filename := filepath.Base(full_file_path)
 	file_extension := filepath.Ext(full_file_path)
 	base_name := filename[:len(filename)-len(file_extension)]
-	dir_path := full_file_path[:(len(full_file_path)-len(filename))]
+	dir_path := full_file_path[:(len(full_file_path) - len(filename))]
 
-	return dir_path, filename, base_name, file_extension;
+	return dir_path, filename, base_name, file_extension
 }
 
 /***

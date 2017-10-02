@@ -97,9 +97,9 @@ import (
 )
 
 // File global state variables
-var theLedgerAddress 	string
-var theLedgerPort 		int
-var __systemReset 		bool
+var theLedgerAddress string
+var theLedgerPort int
+var __systemReset bool
 
 // Ledger Node record
 type LedgerNode struct {

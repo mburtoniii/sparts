@@ -76,7 +76,7 @@ func InitializeDB() {
 	createDBTables()
 
 	fmt.Println()
-	jsonData, _ := dumpDBTable ("Applications")
+	jsonData, _ := dumpDBTable("Applications")
 	fmt.Println(jsonData)
 	fmt.Println()
 }
@@ -186,136 +186,135 @@ func createDBTables() {
 	_, err = theDB.Exec(sql_cmd)
 }
 
-func dumpDBTable (table_name string) (string, error) {
+func dumpDBTable(table_name string) (string, error) {
 
-/******
-	type TableInfo struct {
-		Name			string `json:"table_name"`
-		Content			string `json:"content"`
-	}
+	/******
+		type TableInfo struct {
+			Name			string `json:"table_name"`
+			Content			string `json:"content"`
+		}
 
-	var table TableInfo
-******/
+		var table TableInfo
+	******/
 
 	defer theDB.Close()
-    // Prepare statement to get the native types.
-  stmt, err := theDB.Prepare(fmt.Sprintf("SELECT * FROM %s", table_name))
+	// Prepare statement to get the native types.
+	stmt, err := theDB.Prepare(fmt.Sprintf("SELECT * FROM %s", table_name))
 
-  if err != nil {
-    return "", err
-  }
-  defer stmt.Close()
+	if err != nil {
+		return "", err
+	}
+	defer stmt.Close()
 
-  rows, err := stmt.Query()
-  if err != nil {
-    return "", err
-  }
-  defer rows.Close()
+	rows, err := stmt.Query()
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
 
-  columns, err := rows.Columns()
-  if err != nil {
-    return "", err
-  }
+	columns, err := rows.Columns()
+	if err != nil {
+		return "", err
+	}
 
-  tableData := make([]map[string]interface{}, 0)
+	tableData := make([]map[string]interface{}, 0)
 
-  count := len(columns)
-  values := make([]interface{}, count)
-  scanArgs := make([]interface{}, count)
-  for i := range values {
-    scanArgs[i] = &values[i]
-  }
+	count := len(columns)
+	values := make([]interface{}, count)
+	scanArgs := make([]interface{}, count)
+	for i := range values {
+		scanArgs[i] = &values[i]
+	}
 
-  for rows.Next() {
-    err := rows.Scan(scanArgs...)
-    if err != nil {
-      return "", err
-    }
+	for rows.Next() {
+		err := rows.Scan(scanArgs...)
+		if err != nil {
+			return "", err
+		}
 
-    entry := make(map[string]interface{})
-    for i, col := range columns {
-      v := values[i]
+		entry := make(map[string]interface{})
+		for i, col := range columns {
+			v := values[i]
 
-      b, ok := v.([]byte)
-      if (ok) {
-        entry[col] = string(b)
-      } else {
-        entry[col] = v
-      }
-    }
+			b, ok := v.([]byte)
+			if ok {
+				entry[col] = string(b)
+			} else {
+				entry[col] = v
+			}
+		}
 
-    tableData = append(tableData, entry)
-  }
+		tableData = append(tableData, entry)
+	}
 
-  
-  jsonData99, err := json.Marshal(tableData)
-  //fmt.Printf ("jsonData type: %T\n", jsonData99)
+	jsonData99, err := json.Marshal(tableData)
+	//fmt.Printf ("jsonData type: %T\n", jsonData99)
 
-/***
-  jsonData, err1 := json.Marshal(tableData)
-  if err1 != nil {
-    return "", err1
-  }
+	/***
+	  jsonData, err1 := json.Marshal(tableData)
+	  if err1 != nil {
+	    return "", err1
+	  }
 
-  table.Name = table_name
-  table.Content = jsonData
+	  table.Name = table_name
+	  table.Content = jsonData
 
-  jsonRecord, err2 := json.Marshal(table)
-  if err2 != nil {
-    return "", err2
-  }
-*******/
-  return string(jsonData99), nil 
+	  jsonRecord, err2 := json.Marshal(table)
+	  if err2 != nil {
+	    return "", err2
+	  }
+	*******/
+	return string(jsonData99), nil
 }
 
-func dumpTable2 (table string) (string, error) {
+func dumpTable2(table string) (string, error) {
 
-   //rows, err := db.Query(sqlString)
+	//rows, err := db.Query(sqlString)
 
-  	openDB()
+	openDB()
 	defer theDB.Close()
 	////sqlString = fmt.Sprintf("SELECT * FROM %s", table)
 	rows, err := theDB.Query(fmt.Sprintf("SELECT * FROM %s", table))
 
 	checkErr(err)
 
-  if err != nil {
-      return "", err
-  }
-  defer rows.Close()
-  columns, err := rows.Columns()
-  if err != nil {
-      return "", err
-  }
-  count := len(columns)
-  tableData := make([]map[string]interface{}, 0)
-  values := make([]interface{}, count)
-  valuePtrs := make([]interface{}, count)
-  for rows.Next() {
-      for i := 0; i < count; i++ {
-          valuePtrs[i] = &values[i]
-      }
-      rows.Scan(valuePtrs...)
-      entry := make(map[string]interface{})
-      for i, col := range columns {
-          var v interface{}
-          val := values[i]
-          b, ok := val.([]byte)
-          if ok {
-              v = string(b)
-          } else {
-              v = val
-          }
-          entry[col] = v
-      }
-      tableData = append(tableData, entry)
-  }
-  jsonData, err := json.Marshal(tableData)
-  if err != nil {
-      return "", err
-  }
-  fmt.Println(string(jsonData))
-  return string(jsonData), nil 
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+	columns, err := rows.Columns()
+	if err != nil {
+		return "", err
+	}
+	count := len(columns)
+	tableData := make([]map[string]interface{}, 0)
+	values := make([]interface{}, count)
+	valuePtrs := make([]interface{}, count)
+	for rows.Next() {
+		for i := 0; i < count; i++ {
+			valuePtrs[i] = &values[i]
+		}
+		rows.Scan(valuePtrs...)
+		entry := make(map[string]interface{})
+		for i, col := range columns {
+			var v interface{}
+			val := values[i]
+			b, ok := val.([]byte)
+			if ok {
+				v = string(b)
+			} else {
+				v = val
+			}
+			entry[col] = v
+		}
+		tableData = append(tableData, entry)
+	}
+	jsonData, err := json.Marshal(tableData)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println(string(jsonData))
+	return string(jsonData), nil
 }
 
 // A boolean function that determines if a record with uuid exits in the db/
