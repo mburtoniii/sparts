@@ -103,13 +103,14 @@ var __systemReset bool
 
 // Ledger Node record
 type LedgerNode struct {
-	UUID        string `json:"uuid,omitempty"`        // UUID provide w/previous registration
-	Name        string `json:"name"`                  // Fullname
-	ShortId     string `json:"short_id"`              // 1-5 alphanumeric characters (unique)
-	API_Address string `json:"api_address"`           // e.g., http://147.52.17.33:5000
-	Label       string `json:"label,omitempty"`       // 1-5 words display description
-	Status      string `json:"status,omitempty"`      // RUNNING, DOWN, NOT RESPONDING
-	Description string `json:"description,omitempty"` // 2-3 sentence description
+	UUID         string `json:"uuid"`                  // UUID provide w/previous registration
+	Name         string `json:"name"`                  // Fullname
+	ShortId      string `json:"short_id"`              // 1-5 alphanumeric characters (unique)
+	API_Address  string `json:"api_address"`           // e.g., http://147.52.17.33:5000
+	Node_Address string `json:"node_address"`          // e.g, http://147.52.17.33:8080
+	Label        string `json:"label,omitempty"`       // 1-5 words display description
+	Status       string `json:"status,omitempty"`      // RUNNING, DOWN, NOT RESPONDING
+	Description  string `json:"description,omitempty"` // 2-3 sentence description
 }
 
 type AppRecord struct {
@@ -373,16 +374,6 @@ func POST_LedgerAPIAddress_EndPoint(http_reply http.ResponseWriter, http_request
 	}
 }
 
-type LedgerRegisterRequest struct {
-	Name        string `json:"name"`                  // Fullname
-	ShortId     string `json:"short_id"`              //	1-5 alphanumeric characters (unique)
-	API_Address string `json:"api_address"`           // e.g., http://147.52.17.33:5000
-	UUID        string `json:"uuid,omitempty"`        // 	UUID provide w/previous registration
-	Label       string `json:"label,omitempty"`       // 1-5 words display description
-	Status      string `json:"status,omitempty"`      // RUNNING,
-	Description string `json:"description,omitempty"` // 2-3 sentence description
-}
-
 // Handle: GET /api/sparts/ledger/nodes
 func GET_LedgerNodes_EndPoint(http_reply http.ResponseWriter, http_request *http.Request) {
 
@@ -433,16 +424,6 @@ func POST_Register_Ledger_EndPoint(http_reply http.ResponseWriter, request *http
 
 	fmt.Println("UUID is: ", ledger_node_record.UUID)
 
-	/*************
-		if LedgerNodeExists(ledger_register.UUID) {
-			// Return already existing UUID
-			reply.UUID = ledger_register.UUID
-		} else {
-			// Return new UUID
-			fmt.Println("its new!!")
-			reply.UUID = GetUUID()
-		}
-	*************/
 	// TODO - ping to see if up.
 	ledger_node_record.Status = "RUNNING"
 
@@ -496,17 +477,6 @@ func POST_RegisterApplication_EndPoint(http_reply http.ResponseWriter, request *
 
 	// TODO: ping to see if up.
 	app_record.Status = "RUNNING"
-
-	/****
-		AddApplicationToDB(reply.UUID,
-			app_register.Name,
-			app_register.ShortId,
-			app_register.API_URL,
-			app_register.App_Type,
-			app_register.Label,
-			app_register.Description,
-			status)
-	*****/
 	AddApplicationToDB(app_record)
 	reply.UUID = app_record.UUID
 	httpSendReply(http_reply, reply)
