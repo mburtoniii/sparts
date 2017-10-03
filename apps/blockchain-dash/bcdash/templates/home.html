@@ -36,8 +36,11 @@
 <h3>Blockchain Nodes</h3>
 <hr>
 
-
+{% if not nodes %}
+    There are no nodes registered.
+{% else %}
 <div class="blockchain-view-section blockchain-view-section-nodes">
+
 {% for node in nodes %}
 
     <div class="blockchain-node">
@@ -50,14 +53,14 @@
         </div>
 
         <div class="blockchain-node-status" uuid="{{node['uuid']}}">
-        <div class="node-status-text">Status: </div>
-        <div class="blockchain-nodes-preload"></div>
-        <span class="node-status-value">Retrieving...</span>
+            <span class="node-status-text">Status: </span>
+            <span class="blockchain-nodes-preload"></span>
+            <span class="node-status-value">Retrieving...</span>
         </div>
 
         <div class="blockchain-node-popup-content">
             <div><strong>Node {{node["short_id"]}} ({{node["label"]}})</strong></div>
-            <div><strong>Ledger service URL</strong>: {{node["api_url"]}}</div>
+            <div><strong>Ledger service URL</strong>: {{node["api_address"]}}</div>
             <div><strong>UUID</strong>: {{node["uuid"]}}</div>
             <div><strong>Description</strong>: {{node["description"]}}</div>
         </div>
@@ -66,9 +69,14 @@
 
 {% endfor %}
 </div>
+{% endif %}
 
 <h3>Applications</h3>
 <hr>
+
+{% if not apps %}
+    There are no apps registered.
+{% else %}
 
 <div class="blockchain-view-section blockchain-view-section-applications">
     {% for app in apps %}
@@ -90,7 +98,7 @@
         </div>
     {% endfor %}
 </div>
-
+{% endif %}
 
 
 <h3>Suppliers &amp; Parts</h3>

@@ -226,8 +226,6 @@ h3 {
 }
 
 .node-status-text {
-    float: left;
-    margin-right: 5px;
 }
 
 .blockchain-node-popup-content {
@@ -342,6 +340,7 @@ h3 {
 .blockchain-node-status {
     margin-top: 5px;
     max-width: 200px;
+    text-align: center;
 }
 
 .blockchain-node-name span {

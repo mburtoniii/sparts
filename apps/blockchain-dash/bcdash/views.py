@@ -161,11 +161,11 @@ def get_node_status(uuid):
     if selected_node is None:
         return jsonify({"status": "Down. Node UUID was not found on the network."})
 
-    if "api_url" not in node:
-        return jsonify({"status": "Invalid conductor response. No api_url."})
+    if "api_address" not in node:
+        return jsonify({"status": "Invalid conductor response. No api_address."})
 
     try:
-        node_status = ping_node(node["api_url"], timeout=5)
+        node_status = ping_node(node["api_address"], timeout=5)
     except ReadTimeout:
         node_status = "Down. Timed out."
     except ConnectionError:
