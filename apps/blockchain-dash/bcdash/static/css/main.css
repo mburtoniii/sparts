@@ -365,6 +365,7 @@ h3 {
     height: 100px;
     width: 100px;
     position: relative;
+    margin-right: 30px;
 }
 
 .blockchain-app-icon {
