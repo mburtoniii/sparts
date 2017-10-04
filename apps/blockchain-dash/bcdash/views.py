@@ -19,7 +19,7 @@ from requests.exceptions import ReadTimeout, ConnectionError
 from bcdash import app
 from bcdash.api import get_blockchain_nodes, get_ledger_address, ping_node, \
     get_bc_suppliers, get_bc_parts, get_bc_categories, get_bc_envelopes, get_blockchain_apps, \
-    get_ledger_uptime
+    get_ledger_uptime, get_ledger_version
 from bcdash.exceptions import APIError
 
 def render_page(template, title="", *args, **kwargs):
@@ -47,6 +47,10 @@ def query_ledger_components():
         suppliers = get_bc_suppliers()
         parts = get_bc_parts()
         envelopes = get_bc_envelopes()
+
+        hyperledger_platform = get_ledger_version()
+        hyperledger_version = str(hyperledger_platform["name"]) + \
+            str(hyperledger_platform["version"])
 
         supplier_parts = {}
 
@@ -107,6 +111,7 @@ def query_ledger_components():
             supplier_parts=supplier_parts,
             parts_count=len(parts),
             suppliers_count=len(suppliers),
+            hyperledger_version=hyperledger_version,
             envelopes_count=len([envelope for envelope in envelopes \
                 if envelope["content_type"] == "this"]))
 

@@ -97,6 +97,9 @@ def get_bc_envelopes():
 def get_bc_categories():
     return call_ledger_api("get", "/ledger/categories")
 
+def get_ledger_version():
+    return call_ledger_api("get", "/ledger/sawtooth/version")
+
 def get_ledger_uptime():
     return call_conductor_api("get", "/ledger/uptime")
 

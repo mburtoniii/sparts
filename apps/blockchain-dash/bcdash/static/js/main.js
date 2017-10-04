@@ -62,6 +62,7 @@ $(document).ready(function() {
             $("#envelope-count").html($("#envelopes-count-value").val());
             $("#part-count").html($("#parts-count-value").val());
             $("#supplier-count").html($("#suppliers-count-value").val());
+            $("#hyperledger-version").html($("#hyperledger-version-value").val());
         },
         error: function(jqXHR, textStatus, errorThrown) {
             popup_message("Error", errorThrown);
