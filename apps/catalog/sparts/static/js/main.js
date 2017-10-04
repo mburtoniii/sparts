@@ -572,4 +572,18 @@ $(document).ready(function() {
         }
     });
 
+    videoPlaying = false;
+
+    $("#video-overlay").on("click", function() {
+        if (videoPlaying) {
+            document.getElementById("video-player").pause();
+            videoPlaying = false;
+            $("#video-play-icon").css({"opacity": 1, "transform": "scale(1)"});
+        }
+        else {
+            document.getElementById("video-player").play();
+            videoPlaying = true;
+            $("#video-play-icon").css({"opacity": 0, "transform": "scale(1.5)"});
+        }
+    });
 });

@@ -1324,3 +1324,25 @@ h3 {
     width: 640px;
     height: 300px;
 }
+
+#video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 533px;
+    height: 300px;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+#video-play-icon {
+    background-image: url("/static/images/play.png");
+    width: 120px;
+    height: 120px;
+    background-size: contain;
+    display: inline-block;
+    transition:all 0.4s ease;
+}
