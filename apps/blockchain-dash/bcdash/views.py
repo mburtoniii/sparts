@@ -50,7 +50,7 @@ def query_ledger_components():
 
         hyperledger_platform = get_ledger_version()
         hyperledger_version = str(hyperledger_platform["name"]) + " version " \
-            str(hyperledger_platform["version"])
+            + str(hyperledger_platform["version"])
 
         supplier_parts = {}
 
