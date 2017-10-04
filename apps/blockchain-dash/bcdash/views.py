@@ -49,7 +49,7 @@ def query_ledger_components():
         envelopes = get_bc_envelopes()
 
         hyperledger_platform = get_ledger_version()
-        hyperledger_version = str(hyperledger_platform["name"]) + \
+        hyperledger_version = str(hyperledger_platform["name"]) + " version " \
             str(hyperledger_platform["version"])
 
         supplier_parts = {}
